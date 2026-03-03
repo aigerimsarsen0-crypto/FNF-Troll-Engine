@@ -165,10 +165,12 @@ class PlayState extends MusicBeatState
 
 	public var extraData:Map<String, Dynamic> = [];
 
-	var legacyOnCreatePost:Bool = true; // Can be set by scripts to make onCreatePost be called where it used to be (before the countdown and super.create)
+	#if ALLOW_DEPRECATION
+	var legacyOnCreatePost:Bool = false; // Can be set by scripts to make onCreatePost be called where it used to be (before the countdown and super.create)
 	// NOTE: Make this false probably before 1.0 or 1.1 releases
 	// true by default rn just for the sake of not breaking things
 	// You can set it to false in a script if you wanna make sure things dont break when its false tho
+	#end
 
 	public static var instance:PlayState;
 
@@ -968,8 +970,10 @@ class PlayState extends MusicBeatState
 			addKeyboardEvents();
 
 		////
+		#if ALLOW_DEPRECATION
 		if(legacyOnCreatePost) // Just incase shit breaks???
-			callOnAllScripts('onCreatePost');
+			onCreatePost();
+		#end
 
 		add(ratingGroup);
 		add(playfields);
@@ -1080,12 +1084,18 @@ class PlayState extends MusicBeatState
 
 		songIntroCutscene();
 
+		#if ALLOW_DEPRECATION
 		if(!legacyOnCreatePost) // Just incase shit breaks???
-			callOnAllScripts('onCreatePost');
+		#end
+		onCreatePost();
 
 		finishedCreating = true;
 
 		Paths.clearUnusedMemory();
+	}
+
+	inline function onCreatePost() {
+		signals.onCreatePost.dispatch();
 	}
 
 	function updateKeybinds() {
