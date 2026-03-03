@@ -51,6 +51,8 @@ class DiscordClient
 		thread = Thread.create(threadLoop);
 
 		FlxG.stage.application.onExit.add(onApplicationExit);
+		
+		initialized = true;
 	}
 
 	public static inline function setActive(value:Bool, wait:Bool = false):Bool
