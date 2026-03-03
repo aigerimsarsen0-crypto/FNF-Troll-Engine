@@ -51,19 +51,11 @@ class SongEvent {
 
 class ScriptedSongEvent extends SongEvent {
 	final script:FunkinHScript;
-	
-	#if ALLOW_DEPRECATION
-	// why couldn't you give onTrigger the full data structure like every other function!!!!!!!!!!!!! ughh
-	var useNewAPI:Bool;
-	#end
 
 	private function new(id:String, script:FunkinHScript) {
 		super(id);
 		this.script = script;
 		script.set('this', this);
-		#if ALLOW_DEPRECATION
-		this.useNewAPI = script.get("useNewAPI") == true;
-		#end
 	}
 
 	override function onLoad() {
@@ -71,18 +63,11 @@ class ScriptedSongEvent extends SongEvent {
 	}
 
 	override function shouldPush(data:EventData):Bool {
-		return switch(callScript("shouldPush", [data])) {
-			#if ALLOW_DEPRECATION
-			case Globals.Function_Stop: false;
-			#end
-			case false: false;
-			default: true;
-		}
+		return callScript("shouldPush", [data]) ?? true;
 	}
 
 	override function getOffset(data:EventData):Float {
-		var r = callScript("getOffset", [data]);
-		return (r != null) && (r is Int || r is Float) ? r : 0.0;
+		return callScript("getOffset", [data]) ?? 0.0;
 	}
 
 	override function onPush(data:EventData):Void {
@@ -90,9 +75,6 @@ class ScriptedSongEvent extends SongEvent {
 	}
 	
 	override function onTrigger(data:EventData, ?time:Float):Void {
-		#if ALLOW_DEPRECATION
-		(!useNewAPI) ? callScript("onTrigger", [data.value1, data.value2, time]) :
-		#end
 		callScript("onTrigger", [data, time]);
 	}
 	
