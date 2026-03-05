@@ -11,7 +11,7 @@ import Sys.sleep;
 typedef DiscordRPCInfo = {
 	var applicationId:String;
 	var allowedImageKeys:Array<String>;
-	var defaultPresence:DiscordClientPresenceParams;
+	var defaultPresence:DiscordPresenceParams;
 }
 
 private final defaultRPCInfo:DiscordRPCInfo = {
@@ -91,7 +91,7 @@ class DiscordClient
 		}
 	}
 
-	public static function changePresence(data:DiscordClientPresenceParams, mergeDefault:Bool = true)
+	public static function changePresence(data:DiscordPresenceParams, mergeDefault:Bool = true)
 	{
 		if (!active)
 			return;
@@ -99,7 +99,7 @@ class DiscordClient
 		if (hideDetails) {
 			data = currentInfo.defaultPresence;
 		}else if (mergeDefault) {
-			data = merge(data, currentInfo.defaultPresence);
+			data = DiscordPresenceParamTools.merge(data, currentInfo.defaultPresence);
 		}
 
 		////
@@ -109,8 +109,8 @@ class DiscordClient
 		var largeImageText = data.largeImageText;
 		var smallImageKey = data.smallImageKey;
 		// does discord even use these anymore i havent seen them working in a huge while
-		//var startTimestamp = data.startTimestamp;
-		//var endTimestamp = data.endTimestamp;
+		var startTimestamp = data.startTimestamp;
+		var endTimestamp = data.endTimestamp;
 
 		if (!currentInfo.allowedImageKeys.contains(largeImageKey))
 			largeImageKey = currentInfo.defaultPresence.largeImageKey;
@@ -124,10 +124,8 @@ class DiscordClient
 		lastPresence.largeImageKey = largeImageKey;
 		lastPresence.largeImageText = largeImageText;
 		lastPresence.smallImageKey = smallImageKey;
-		/*
-		lastPresence.startTimestamp = startTimestamp;
-		lastPresence.endTimestamp = endTimestamp;
-		*/
+		if (startTimestamp != null) lastPresence.startTimestamp = startTimestamp;
+		if (endTimestamp != null) lastPresence.endTimestamp = endTimestamp;	
 
 		DiscordRpc.UpdatePresence(cpp.RawConstPointer.addressOf(lastPresence));
 
@@ -183,25 +181,6 @@ class DiscordClient
 			mutex.release();
 			sleep(0.6);
 		}
-	}
-
-	private static function merge(data:Dynamic, defaultData:Dynamic)
-	{
-		if (data == null)
-			return defaultData;
-
-		data = Reflect.copy(data);
-
-		if (defaultData != null) {
-			var dataFields = Reflect.fields(data);
-			for (fieldName in Reflect.fields(defaultData)) {
-				if (!dataFields.contains(fieldName)) {
-					Reflect.setField(data, fieldName, Reflect.field(defaultData, fieldName));
-				}
-			}		
-		}
-
-		return data;
 	}
 
 	////
@@ -263,12 +242,41 @@ class DiscordClient
 class DiscordClient {
 	public inline static function start(wait:Bool) {}
 	public inline static function shutdown(wait:Bool) {}
-	public static function changePresence(data:DiscordClientPresenceParams, mergeDefault:Bool = true) {}
+	public static function changePresence(data:DiscordPresenceParams, mergeDefault:Bool = true) {}
 }
 #end
 
+class DiscordPresenceParamTools {
+	public static function merge(data:DiscordPresenceParams, defaultData:DiscordPresenceParams):DiscordPresenceParams
+	{
+		if (data == null)
+			return defaultData;
+
+		data = Reflect.copy(data);
+
+		if (defaultData != null) {
+			var dataFields = Reflect.fields(data);
+			for (fieldName in Reflect.fields(defaultData)) {
+				if (!dataFields.contains(fieldName)) {
+					Reflect.setField(data, fieldName, Reflect.field(defaultData, fieldName));
+				}
+			}		
+		}
+
+		return data;
+	}
+
+	public static function setRemainingTime(data:DiscordPresenceParams, timeLeft:Float)
+	{
+		if (timeLeft > 0.0)
+			data.endTimestamp = Std.int((Date.now().getTime() + timeLeft) / 1000);
+		else
+			data.endTimestamp = null;
+	}
+}
+
 // copied from Funkin zzzzz not typing all that :yawnn:
-typedef DiscordClientPresenceParams =
+typedef DiscordPresenceParams =
 {
 	/** 
 		The first row of text below the game title.  
@@ -294,4 +302,16 @@ typedef DiscordClientPresenceParams =
 		Text that is displayed when hovering over `largeImageKey`.  
 	**/
 	var ?largeImageText:String;
+
+	/**
+		Unix timestamp (in seconds).
+		If not `null` an elapsed time counter will be displayed on the user's profile.
+	**/
+	var ?startTimestamp:Null<Int>;
+
+	/**
+		Unix timestamp (in seconds).
+		If not `null` a countdown timer will be displayed on the user's profile.
+	**/
+	var ?endTimestamp:Null<Int>;
 }

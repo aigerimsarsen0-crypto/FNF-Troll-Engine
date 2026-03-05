@@ -62,7 +62,7 @@ using StringTools;
 using CoolerStringTools;
 
 #if DISCORD_ALLOWED
-import funkin.api.Discord;
+using funkin.api.Discord;
 #end
 
 import funkin.states.base.VideoPlayerState;
@@ -474,7 +474,7 @@ class PlayState extends MusicBeatState
 	#if DISCORD_ALLOWED
 	// Discord RPC variables
 	var updateDiscordRPC:Bool = true;
-	var discordRPCParams:DiscordClientPresenceParams = {};
+	var discordRPCParams:DiscordPresenceParams = {};
 	var detailsText:String = "";
 	var detailsPausedText:String = "";
 	#end
@@ -2042,17 +2042,19 @@ class PlayState extends MusicBeatState
 		if (!updateDiscordRPC)
 			return;
 
-		final timeLeft:Float = (songLength - Conductor.songPosition - ClientPrefs.noteOffset);
-		final detailsText:String = (detailsText!=null) ? detailsText : this.detailsText;
+		final detailsText:String = detailsText ?? this.detailsText;
+		var timeLeft:Float = 0;
 
 		if (isDead)
 			discordRPCParams.details = 'Game Over - $detailsText';
 		else if (paused)
 			discordRPCParams.details = detailsPausedText;
-		else if (timeLeft > 0.0)
+		else {
 			discordRPCParams.details = detailsText;
-		else
-			discordRPCParams.details = detailsText;
+			timeLeft = Std.int((Date.now().getTime() + timeLeft) / 1000);
+		}
+		
+		discordRPCParams.setRemainingTime(timeLeft);
 
 		DiscordClient.changePresence(discordRPCParams);
 	}
