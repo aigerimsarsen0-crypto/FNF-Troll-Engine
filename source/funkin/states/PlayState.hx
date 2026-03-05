@@ -2051,7 +2051,7 @@ class PlayState extends MusicBeatState
 			discordRPCParams.details = detailsPausedText;
 		else {
 			discordRPCParams.details = detailsText;
-			timeLeft = Std.int((Date.now().getTime() + timeLeft) / 1000);
+			timeLeft = (songLength - Conductor.songPosition - ClientPrefs.noteOffset);
 		}
 		
 		discordRPCParams.setRemainingTime(timeLeft);
