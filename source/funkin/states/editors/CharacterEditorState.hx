@@ -110,7 +110,7 @@ final TemplateCharacter:String = '{
 	"scale": 1
 }';
 
-class CharacterEditorState extends MusicBeatState {
+class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 	static function getAnimOrder(name:String):Int {
 		var points = 0;
 

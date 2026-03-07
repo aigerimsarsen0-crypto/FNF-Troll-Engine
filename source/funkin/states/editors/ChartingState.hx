@@ -86,7 +86,7 @@ typedef ChartingStateSession = {
 @:access(flixel.sound.FlxSound._sound)
 @:access(openfl.media.Sound.__buffer)
 @:allow(funkin.states.editors.ChartingState)
-class ChartingState extends MusicBeatState
+class ChartingState extends funkin.states.base.CustomFlxUIState
 {
 	public static var instance:ChartingState;
 
