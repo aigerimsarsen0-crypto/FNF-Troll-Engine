@@ -1490,11 +1490,87 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function setSelectedEventType(typeName:String)
 	{
-		if (curSelectedEvent != null)
-		{
+		if (curSelectedEvent != null) {
 			curSelectedEvent.subEventsData[subEventIdx][0] = typeName;
 
 			updateGrid();
+		}
+	}
+
+	// New event buttons
+	function addNewSubEvent() {
+		if (curSelectedEvent == null)
+			return;
+
+		new AddNewSubEventAction(curSelectedEvent);
+	}
+
+	function removeSubEvent() {
+		if (curSelectedEvent == null)
+			return;
+
+		new RemoveSubEventAction(curSelectedEvent, subEventIdx);
+	}
+
+	function subEventLeft() {
+		if (curSelectedEvent == null)
+			return;
+
+		if (FlxG.keys.pressed.SHIFT) {
+			new MoveSubEventAction(curSelectedEvent, subEventIdx, -1);
+			return;
+		}
+		
+		changeEventSelected(-1);		
+	}
+
+	function subEventRight() {
+		if (curSelectedEvent == null)
+			return;
+
+		if (FlxG.keys.pressed.SHIFT) {
+			new MoveSubEventAction(curSelectedEvent, subEventIdx, 1);
+			return;
+		}
+		
+		changeEventSelected(1);
+	}
+
+	function changeEventSelected(value:Int = 0, isAbs:Bool = false)
+	{
+		if (curSelectedEvent != null) {
+			subEventIdx = isAbs ? value : subEventIdx + value;
+			if(subEventIdx < 0) subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
+			else if(subEventIdx >= curSelectedEvent.subEventsData.length) subEventIdx = 0;
+		}else {
+			subEventIdx = 0;
+		}
+		updateEventsUI();
+	}
+
+	function subEventSeparate() {
+		if (curSelectedEvent == null)
+			return;
+
+		if (curSelectedEvent.subEventsData.length <= 1)
+			return;
+
+		new SeparateSubEventAction(curSelectedEvent, subEventIdx);
+	}
+
+	inline function newSquareButton(x:Float, y:Float, label:String, ?callback:Void->Void) {
+		var button = new FlxUIButton(x, y, label, callback, false);
+		button.label.size = 12;
+		button.resize(20, 20);
+		button.setSize(20, 20);
+		return button;
+	}
+
+	function setAllLabelsOffset(button:FlxButton, x:Float, y:Float)
+	{
+		for (point in button.labelOffsets)
+		{
+			point.set(x, y);
 		}
 	}
 
@@ -1505,18 +1581,24 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		final DECIMALS:Int = 4;
 
-		eventStepperStrumTime = new CustomFlxUINumericStepper(20, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, new FlxUIInputText(0, 0, 120));
-		eventStepperStrumTime.name = 'event_strumTime';
+		eventStepperStrumTime = new CustomFlxUINumericStepper(10, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, new FlxUIInputText(0, 0, 120));
+		eventStepperStrumTime.name = 'eventNote_strumTime';
 		blockPressWhileTypingOnStepper.push(eventStepperStrumTime);
 
-		eventDescText = new FlxText(20, 200, 0, "");
+		var separateButton = new FlxUIButton(eventStepperStrumTime.x + eventStepperStrumTime.width + 10, eventStepperStrumTime.y, "Separate", subEventSeparate, false);
+		separateButton.name = 'eventNote_separateSub';
+		separateButton.color = FlxColor.ORANGE;
+		separateButton.label.color = FlxColor.WHITE;
+		separateButton.resize(0, eventStepperStrumTime.height);
+
+		eventDescText = new FlxText(10, 200, 0, "");
 
 		var leEvents:Array<String> = [""];
 		for (i in 0...eventStuff.length)
 			leEvents.push(eventStuff[i][0]);
 
 		eventDropDown = new CustomFlxUIDropDownMenu(
-			20, 80, 
+			10, 80, 
 			FlxUIDropDownMenu.makeStrIdLabelArray(leEvents, true), 
 			function(pressed:String) {
 				var idx:Int = Std.parseInt(pressed);
@@ -1566,120 +1648,77 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 		eventNameInput.focusLost = () -> onEnterEventName(eventNameInput.text);
 
-		value1InputText = new FlxUIInputText(20, 125, 116, "");
+		value1InputText = new FlxUIInputText(10, 125, 116, "");
 		value1InputText.name = 'event_value1';
 		blockPressWhileTypingOn.push(value1InputText);
 
-		value2InputText = new FlxUIInputText(20, 165, 116, "");
+		value2InputText = new FlxUIInputText(10, 165, 116, "");
 		value2InputText.name = 'event_value2';
 		blockPressWhileTypingOn.push(value2InputText);
 
-		// New event buttons
-		var removeButton:FlxButton = new FlxButton(eventDropDown.x + eventDropDown.width + 10, eventDropDown.y, '-', function()
-		{
-			if(curSelectedEvent == null)
-				return;
-
-			curSelectedEvent.subEventsData.remove(curSelectedEvent.subEventsData[subEventIdx]);
-			--subEventIdx;
-
-			if (curSelectedEvent.subEventsData.length <= 0) {
-				_song.events.remove(curSelectedEvent);
-				curSelectedEvent = null;
-				subEventIdx = 0;
-			}else {
-				if (subEventIdx < 0) 
-					subEventIdx = 0;
-				else if (subEventIdx >= curSelectedEvent.subEventsData.length) 
-					subEventIdx = curSelectedEvent.subEventsData.length - 1;
-			}
-
-			changeEventSelected();
-			updateGrid();
-		});
-		removeButton.setGraphicSize(Std.int(removeButton.height), Std.int(removeButton.height));
-		removeButton.updateHitbox();
+		////
+		var removeButton = newSquareButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent);
+		removeButton.name = 'event_removeSub';
 		removeButton.color = FlxColor.RED;
 		removeButton.label.color = FlxColor.WHITE;
-		removeButton.label.size = 12;
-		setAllLabelsOffset(removeButton, -30, 0);
-		tab_group_event.add(removeButton);
-
-		var addButton:FlxButton = new FlxButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', function()
-		{
-			if(curSelectedEvent != null) //Is event note
-			{
-				curSelectedEvent.subEventsData.push(['', '', '']);
-
-				changeEventSelected(1);
-				updateGrid();
-			}
-		});
-		addButton.setGraphicSize(Std.int(removeButton.width), Std.int(removeButton.height));
-		addButton.updateHitbox();
+		
+		var addButton = newSquareButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', addNewSubEvent);
+		addButton.name = 'eventNote_addSub';
 		addButton.color = FlxColor.GREEN;
 		addButton.label.color = FlxColor.WHITE;
-		addButton.label.size = 12;
-		setAllLabelsOffset(addButton, -30, 0);
-		tab_group_event.add(addButton);
+		
+		var moveLeftButton = newSquareButton(addButton.x + addButton.width + 20, addButton.y, '<', subEventLeft);
+		addButton.name = 'eventNote_subLeft';
 
-		var moveLeftButton:FlxButton = new FlxButton(addButton.x + addButton.width + 20, addButton.y, '<', function()
-		{
-			if (curSelectedEvent == null) // Isn't event note
-				return;
-
-			if (FlxG.keys.pressed.SHIFT){
-				var noteEvents = curSelectedEvent.subEventsData;
-				var selectedEvent:Array<String> = noteEvents[subEventIdx];
-				var switchIdx:Int = (subEventIdx < 1) ? noteEvents.length-1 : subEventIdx-1;
-
-				noteEvents[subEventIdx] = noteEvents[switchIdx];
-				noteEvents[switchIdx] = selectedEvent;
-
-				updateGrid();			
-			}
-			
-			changeEventSelected(-1);		
-		});
-		moveLeftButton.setGraphicSize(Std.int(addButton.width), Std.int(addButton.height));
-		moveLeftButton.updateHitbox();
-		moveLeftButton.label.size = 12;
-		setAllLabelsOffset(moveLeftButton, -30, 0);
-		tab_group_event.add(moveLeftButton);
-
-		var moveRightButton:FlxButton = new FlxButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', function()
-		{
-			if (curSelectedEvent == null) // Isn't event note
-				return;
-
-			if (FlxG.keys.pressed.SHIFT)
-			{
-				var noteEvents = curSelectedEvent.subEventsData;
-				var selectedEvent:Array<String> = noteEvents[subEventIdx];
-				var switchIdx:Int = (subEventIdx == noteEvents.length-1) ? 0 : subEventIdx+1;
-
-				noteEvents[subEventIdx] = noteEvents[switchIdx];
-				noteEvents[switchIdx] = selectedEvent;
-
-				updateGrid();
-			}
-			
-			changeEventSelected(1);
-		});
-		moveRightButton.setGraphicSize(Std.int(moveLeftButton.width), Std.int(moveLeftButton.height));
-		moveRightButton.updateHitbox();
-		moveRightButton.label.size = 12;
-		setAllLabelsOffset(moveRightButton, -30, 0);
-		tab_group_event.add(moveRightButton);
-
-		selectedEventText = new FlxText(addButton.x - 100, addButton.y - 6, (moveRightButton.x - addButton.x) + 186, 'Selected Event: None');
+		var moveRightButton = newSquareButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', subEventRight);
+		addButton.name = 'eventNote_subRight';
+		
+		selectedEventText = new FlxText(addButton.x - 100, addButton.y - 6, (moveRightButton.x - addButton.x) + 186, 'No event stack selected');
 		selectedEventText.y -= selectedEventText.height;
 		selectedEventText.alignment = CENTER;
-		tab_group_event.add(selectedEventText);
 
+		////
+		inline function fontDef()
+			return new flixel.addons.ui.FontDef(flixel.system.FlxAssets.FONT_DEFAULT);
+
+		inline function oneLineTip(title:String, ?width:Int):flixel.addons.ui.FlxUITooltipManager.FlxUITooltipData {
+			var anchor = new flixel.addons.ui.Anchor(0, 2, "center", "bottom", "center", "top");
+			
+			var titleFontDef = fontDef();
+			titleFontDef.format.align = "center";
+			
+			return {title: title, body: "", anchor: anchor, style: {titleWidth: width, bodyWidth: width, titleFormat: titleFontDef}};
+		}
+		
+		inline function simpleTip(title:String, body:String):flixel.addons.ui.FlxUITooltipManager.FlxUITooltipData {
+			var fontDef = fontDef();
+			fontDef.format.align = "left";
+			return {title: title, body: body, delay: 1, style: {titleFormat: fontDef, bodyFormat: fontDef}};
+		}
+
+		var td = simpleTip("Move left", "Select the left event.\nHold SHIFT to change the order of the selected event instead");
+		td.anchor = new flixel.addons.ui.Anchor(0, 2, "center", "bottom", "center", "top");
+		td.style.bodyWidth = 172;
+		tooltips.add(moveLeftButton, td);
+		
+		var td = simpleTip("Move right", "Select the right event.\nHold SHIFT to change the order of the selected event instead");
+		td.anchor = new flixel.addons.ui.Anchor(0, 2, "center", "bottom", "center", "top");
+		td.style.bodyWidth = 172;
+		tooltips.add(moveRightButton, td);
+
+		tooltips.add(separateButton, simpleTip("Separate", "Separate the selected Sub-Event into its own event note"));
+
+		/* wow thanks for the tip i would have never guessed otherwise */
+		tooltips.add(addButton, oneLineTip("Add new", 48));
+		tooltips.add(removeButton, oneLineTip("Remove", 48));
+
+		////
 		tab_group_event.add(eventLabelStrumTime = new FlxText(eventStepperStrumTime.x, eventStepperStrumTime.y - 15, 0, 'Strum time:'));
 		tab_group_event.add(eventStepperStrumTime);
+		tab_group_event.add(separateButton);
+
 		tab_group_event.add(eventDescText);
+
 		tab_group_event.add(new FlxText(value1InputText.x, value1InputText.y - 20, 0, "Value 1:"));	
 		tab_group_event.add(value1InputText);
 		tab_group_event.add(new FlxText(value2InputText.x, value2InputText.y - 20, 0, "Value 2:"));
@@ -1687,27 +1726,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_event.add(new FlxText(eventDropDown.x, eventDropDown.y - 20, 0, "Event:"));
 		tab_group_event.add(eventDropDown);
 
+		tab_group_event.add(removeButton);
+		tab_group_event.add(addButton);
+		tab_group_event.add(moveLeftButton);
+		tab_group_event.add(moveRightButton);
+		tab_group_event.add(selectedEventText);
+
 		UI_box.addGroup(tab_group_event);
-	}
-
-	function changeEventSelected(value:Int = 0, isAbs:Bool = false)
-	{
-		if (curSelectedEvent != null) {
-			subEventIdx = isAbs ? value : subEventIdx + value;
-			if(subEventIdx < 0) subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
-			else if(subEventIdx >= curSelectedEvent.subEventsData.length) subEventIdx = 0;
-		}else {
-			subEventIdx = 0;
-		}
-		updateEventsUI();
-	}
-
-	function setAllLabelsOffset(button:FlxButton, x:Float, y:Float)
-	{
-		for (point in button.labelOffsets)
-		{
-			point.set(x, y);
-		}
 	}
 
 	var metronomeStepper:CustomFlxUINumericStepper;
@@ -2240,8 +2265,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					updateNoteSteps();
 					updateEventSteps();
 
-				case 'event_strumTime':
+				case 'eventNote_strumTime':
 					if (curSelectedEvent != null) {
+						// TODO: make an action for this
 						curSelectedEvent.strumTime = nums.value;
 						updateGrid();
 						updateEventSteps();
@@ -2251,6 +2277,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 				case 'note_strumTime':
 					if (curSelectedNote != null) {
+						// TODO: make an action for this
 						curSelectedNote.strumTime = nums.value;
 						updateGrid();
 						updateNoteSteps();
@@ -3335,7 +3362,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				eventDescText.text = eventStuff[selectedIdx][1];
 			}
 		}else {
-			selectedEventText.text = 'Selected Event: None';
+			selectedEventText.text = 'No event stack selected';
 		}
 	}
 
@@ -3673,7 +3700,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			//Events
 			for (i in _song.events) {
 				if (i != note.chartData) continue;
-				new RemoveEventAction(i);
+				new RemoveEventNoteAction(i);
 				break;
 			}
 		}
@@ -3714,7 +3741,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var text2:String = value2InputText.text;
 
 		var e = PsychEventNote.fromValues(noteStrum, [[eventType, text1, text2]]);
-		new AddEventAction(e);
+		new AddEventNoteAction(e);
 	}
 
 	////
@@ -4059,7 +4086,154 @@ private class ChangeSustainAction extends NoteAction {
 	}
 }
 
-private class RemoveEventAction extends ChartingAction {
+private class SeparateSubEventAction extends AddEventNoteAction {
+	var subEventIdx:Int;
+	var ogEventData:PsychEventNote;
+
+	public function new(eventData:PsychEventNote, subEventIdx:Int) {
+		this.ogEventData = eventData;
+		this.subEventIdx = subEventIdx;
+		super(null);
+	}
+
+	override function redo() {
+		var subEvents = ogEventData.subEventsData.splice(subEventIdx, 1);
+
+		eventData = PsychEventNote.fromValues(ogEventData.strumTime, subEvents);
+		super.redo();
+	}
+
+	override function undo() {
+		//super.undo();
+
+		_song.events.remove(eventData);
+
+		if (instance.curSelectedEvent == eventData) {
+			instance.subEventIdx = 0;
+			instance.curSelectedEvent = null;
+			instance.changeEventSelected();
+		}
+
+		ogEventData.subEventsData.insert(subEventIdx, eventData.subEventsData[0]);
+		instance.updateGrid();
+	}
+
+	override function toString() {
+		return 'Separate Sub-Event ${eventData.strumTime}';
+	}
+}
+
+private class MoveSubEventAction extends ChartingAction {
+	var eventData:PsychEventNote;
+	var subEventIdx:Int;
+	var swapIdx:Int;
+
+	public function new(eventData:PsychEventNote, subEventIdx:Int, direction:Int) {
+		this.eventData = eventData;
+		this.subEventIdx = subEventIdx;
+		this.swapIdx = CoolUtil.updateIndex(subEventIdx, direction, eventData.subEventsData.length);
+
+		super();
+	}
+
+	public function redo() {
+		var temp = eventData.subEventsData[subEventIdx];
+		eventData.subEventsData[subEventIdx] = eventData.subEventsData[swapIdx];
+		eventData.subEventsData[swapIdx] = temp;
+
+		instance.changeEventSelected(swapIdx, true);
+		instance.updateGrid();
+	}
+
+	public function undo() {
+		var temp = eventData.subEventsData[subEventIdx];
+		eventData.subEventsData[subEventIdx] = eventData.subEventsData[swapIdx];
+		eventData.subEventsData[swapIdx] = temp;
+
+		instance.changeEventSelected(subEventIdx, true);
+		instance.updateGrid();
+	}
+
+	public function toString() {
+		return 'Move Sub-Event (${eventData.strumTime} ${swapIdx - subEventIdx})';
+	}
+}
+
+private class RemoveSubEventAction extends RemoveEventNoteAction {
+	//var eventData:PsychEventNote;
+	var subEventData:PsychSubEventData;
+	var subEventIdx:Int;
+
+	public function new(eventData:PsychEventNote, subEventIdx:Int) {
+		this.subEventIdx = subEventIdx;
+		this.subEventData = eventData.subEventsData[subEventIdx];
+
+		if (subEventData == null)
+			throw 'Sub-Event data cannot be null for RemoveSubEventAction (Index was $subEventIdx)';
+
+		super(eventData);		
+	}
+
+	override function redo() {
+		eventData.subEventsData.remove(subEventData);
+		
+		if (eventData.subEventsData.length == 0)
+			super.redo();
+		else {
+			instance.changeEventSelected(-1);
+			instance.updateGrid();
+		}
+	}
+
+	override function undo() {
+		if (eventData.subEventsData.length == 0) {
+			eventData.subEventsData.push(subEventData);
+			super.undo();
+		}else {
+			eventData.subEventsData.insert(subEventIdx, subEventData);
+			instance.changeEventSelected(subEventIdx, true);
+			instance.updateGrid();
+		}
+	}
+
+	override function toString() {
+		return 'Remove Sub-Event (${eventData.strumTime}, $subEventIdx)';
+	}
+}
+
+private class AddNewSubEventAction extends ChartingAction {
+	var eventData:PsychEventNote;
+	var subEventIdx:Int;
+	var subEventData:PsychSubEventData;
+
+	public function new(eventData:PsychEventNote, index:Int = -1) {
+		if (eventData == null)
+			throw 'Event data cannot be null for AddNewSubEventAction';
+		
+		this.eventData = eventData;
+		this.subEventIdx = index < 0 ? eventData.subEventsData.length : index;
+		this.subEventData = ['', '', ''];
+
+		super();
+	}
+
+	public function redo() {
+		eventData.subEventsData.insert(subEventIdx, subEventData);
+		instance.changeEventSelected(subEventIdx, true);
+		instance.updateGrid();
+	}
+
+	public function undo() {
+		eventData.subEventsData.remove(subEventData);
+		instance.updateGrid();
+	}
+
+	public function toString() {
+		return 'Add new Sub-Event (${eventData.strumTime}, $subEventIdx)';
+	}
+}
+
+private class RemoveEventNoteAction extends ChartingAction {
 	var eventData:PsychEventNote;
 
 	public function new(eventData:PsychEventNote) {
@@ -4092,7 +4266,7 @@ private class RemoveEventAction extends ChartingAction {
 	}
 }
 
-private class AddEventAction extends ChartingAction {
+private class AddEventNoteAction extends ChartingAction {
 	var eventData:PsychEventNote;
 
 	public function new(eventData:PsychEventNote) {
