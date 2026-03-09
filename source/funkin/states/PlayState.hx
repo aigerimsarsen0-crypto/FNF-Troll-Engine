@@ -2811,7 +2811,10 @@ class PlayState extends MusicBeatState
 		FlxTween.cancelTweensOf(timingTxt);
 		FlxTween.cancelTweensOf(timingTxt.scale);
 		
-		timingTxt.text = FlxMath.roundDecimal(hitDiff, 3) + 'ms';
+		// How late the note was hit, if it was hit early then it'll be negative!
+		var ms = FlxMath.roundDecimal(hitDiff, 3);
+		timingTxt.text = '${ms < 0 ? '$ms' : '+$ms'}ms';
+
 		timingTxt.screenCenter();
 		timingTxt.x += ClientPrefs.comboOffset[4];
 		timingTxt.y -= ClientPrefs.comboOffset[5];
