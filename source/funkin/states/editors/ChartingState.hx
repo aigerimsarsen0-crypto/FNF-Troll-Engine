@@ -28,6 +28,7 @@ import flixel.group.FlxSpriteGroup;
 import flixel.util.FlxGradient;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.ui.*;
+import flixel.addons.ui.FlxUIDropDownMenu.FlxUIDropDownHeader;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
@@ -917,11 +918,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function addSongUI():Void
 	{
-		var selectSongButton = new FlxButton(10, 20, "Select Song", openSongSelect);
+		var selectSongButton = new FlxUIButton(10, 20, "Select Song", openSongSelect);
 
-		var saveButton:FlxButton = new FlxButton(110, 20, "Save Chart", saveLevel);
+		var saveButton:FlxUIButton = new FlxUIButton(110, 20, "Save Chart", saveLevel);
 
-		var saveEventJson:FlxButton = new FlxButton(110, saveButton.y + 30, 'Save Events', function() {
+		var saveEventJson:FlxUIButton = new FlxUIButton(110, saveButton.y + 30, 'Save Events', function() {
 			if (_song.events != null && _song.events.length > 1)
 				_song.events.sort(sortEventsByTime);
 
@@ -930,7 +931,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
 		});
 
-		var saveZipButton = new FlxButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
+		var saveZipButton = new FlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
 			var zip = new funkin.data.FuckingZip();
 			zip.addString(encodeChartJson(), getChartFileName());
 			zip.addString(Json.stringify(_song.metadata), 'metadata.json');
@@ -946,12 +947,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 
 		///
-		var reloadSongJson:FlxButton = new FlxButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
+		var reloadSongJson:FlxUIButton = new FlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
 		{
 			showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
 		});
 
-		var loadAutosaveBtn:FlxButton = new FlxButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
+		var loadAutosaveBtn:FlxUIButton = new FlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
 		{
 			var autosaved:Dynamic = options.autosave;
 			if (autosaved == null) {
@@ -986,26 +987,26 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			updateGrid();
 		}
 
-		var loadEventJson:FlxButton = new FlxButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
+		var loadEventJson:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
 			final openEvents:Void->Void = CoolUtil.showOpenDialog.bind('Open Events', getSongPath('events.json'), ['*.json'], onOpenEvents);
 			showWarning('This action will clear the current events.\n\nProceed?', openEvents);
 		});
 
 		////
-		var editTracksButton:FlxButton = new FlxButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
+		var editTracksButton:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
 			UI_box.selected_tab_id = "Tracks";
 		});
 
 		////
-		var fix_oob_notes:FlxButton = new FlxButton(loadAutosaveBtn.x, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
+		var fix_oob_notes:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
 		fix_oob_notes.color = FlxColor.PINK;
 		fix_oob_notes.label.color = FlxColor.WHITE;
 
-		var clear_events:FlxButton = new FlxButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearEvents));
+		var clear_events:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearEvents));
 		clear_events.color = FlxColor.RED;
 		clear_events.label.color = FlxColor.WHITE;
 
-		var clear_notes:FlxButton = new FlxButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearNotes));
+		var clear_notes:FlxUIButton = new FlxUIButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearNotes));
 		clear_notes.color = FlxColor.RED;
 		clear_notes.label.color = FlxColor.WHITE;
 
@@ -1150,7 +1151,110 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var stepperSectionBPM:CustomFlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 
-	var sectionToCopy:Int = 0;
+	var sectionToCopy:Int = -1;
+
+	inline function getEventsInRange(startTime:Float, endTime:Float):Array<PsychEventNote> {
+		return _song.events.filter(function(event:PsychEventNote) {
+			var strumTime:Float = fuckFloatingPoints(event.strumTime);
+			return startTime <= strumTime && strumTime < endTime;
+		});
+	}
+
+	function clearSection(sectionIndex:Int, clearNotes:Bool = true, clearEvents:Bool = true) {
+		if (sectionIndex < 0)
+			return;
+
+		if (clearNotes) {
+			_song.notes[sectionIndex].sectionNotes.resize(0);
+			updateNoteUI();
+		}
+
+		if (clearEvents) {
+			var sectionStart:Float = getSectionStartTime(sectionIndex);
+			var sectionEnd:Float = getSectionStartTime(sectionIndex + 1);
+			var sectionEvents = getEventsInRange(sectionStart, sectionEnd);
+			
+			for (event in sectionEvents) {
+				if (event == curSelectedEvent) {
+					curSelectedEvent = null;
+					changeEventSelected();
+				}
+				_song.events.remove(event);
+			}
+		}
+		updateGrid();
+	}
+
+	function copySection(destIdx:Int, copyIdx:Int, copyNotes:Bool = true, copyEvents:Bool = true) {
+		if (copyIdx < 0)
+			return;
+
+		////
+		var sectionStart:Float = getSectionStartTime(copyIdx);
+		var addToTime:Float = getSectionStartTime(curSec) - sectionStart;
+
+		////
+		if (copyNotes) {
+			for (note in _song.notes[copyIdx].sectionNotes) {
+				var copiedNote:NoteData = note.clone();
+				copiedNote.strumTime += addToTime;
+				_song.notes[destIdx].sectionNotes.push(copiedNote);
+			}
+		}
+
+		////
+		if (copyEvents) {
+			var sectionEnd:Float = getSectionStartTime(copyIdx + 1);
+			var sectionEvents = getEventsInRange(sectionStart, sectionEnd);
+
+			for (event in sectionEvents) {
+				var copiedEvent:PsychEventNote = event.clone();
+				copiedEvent.strumTime = fuckFloatingPoints(event.strumTime) + addToTime;
+				_song.events.push(copiedEvent);
+			}
+			//fixEvents();
+		}
+
+		// the user can't copy to a section that isn't the current one but why not check anyway
+		if (Math.abs(curSec - destIdx) <= 1)
+			updateGrid();
+	}
+
+	function section_swapSides() {
+		for (note in _song.notes[curSec].sectionNotes)
+			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
+
+		updateGrid();
+	}
+	function section_duetNotes() {
+		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSec].sectionNotes) note.clone()];
+
+		for (note in copiedNotes) {
+			if (Math.floor(note.column / _song.keyCount) % 2 == 1)
+				note.column -= _song.keyCount;
+			else
+				note.column += _song.keyCount;
+
+			_song.notes[curSec].sectionNotes.push(note);
+		}
+		
+		copiedNotes.resize(0);
+		copiedNotes = null;
+
+		updateGrid();
+	}
+	function section_mirrorNotes() {
+		for (note in _song.notes[curSec].sectionNotes)
+		{
+			var boob:Int = note.column % _song.keyCount;
+			boob = _song.keyCount - 1 - boob;
+			if (note.column >= _song.keyCount) boob += _song.keyCount;
+
+			note.column = boob;
+		}
+
+		updateGrid();
+	}
 
 	function addSectionUI():Void
 	{
@@ -1160,204 +1264,109 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		////
 		check_mustHitSection = new FlxUICheckBox(10, 15, null, null, "Must hit section", 100);
 		check_mustHitSection.name = 'check_mustHit';
-		check_mustHitSection.checked = _song.notes[curSec].mustHitSection;
 
 		check_gfSection = new FlxUICheckBox(10, check_mustHitSection.y + 30, null, null, "GF section", 100);
 		check_gfSection.name = 'check_gf';
-		check_gfSection.checked = _song.notes[curSec].gfSection;
 
 		check_altAnim = new FlxUICheckBox(10, check_gfSection.y + 30, null, null, "Alt Animation", 100);
-		check_altAnim.checked = _song.notes[curSec].altAnim;
 		check_altAnim.name = 'check_altAnim';
 
 		stepperBeats = new CustomFlxUINumericStepper(150, 25, 1, 1, 1, 9000, 3);
-		stepperBeats.value = getSectionBeats(curSec);
 		stepperBeats.name = 'section_beats';
 		blockPressWhileTypingOnStepper.push(stepperBeats);
 
 		check_changeBPM = new FlxUICheckBox(150, stepperBeats.y + 30, null, null, 'Change BPM', 100);
-		check_changeBPM.checked = _song.notes[curSec].changeBPM;
 		check_changeBPM.name = 'check_changeBPM';
 
 		stepperSectionBPM = new CustomFlxUINumericStepper(150, check_changeBPM.y + 20, 1, Conductor.bpm, 0, 999, 1);
-		if(check_changeBPM.checked) {
-			stepperSectionBPM.value = _song.notes[curSec].bpm;
-		} else {
-			stepperSectionBPM.value = Conductor.bpm;
-		}
 		stepperSectionBPM.name = 'section_bpm';
 		blockPressWhileTypingOnStepper.push(stepperSectionBPM);
 
 		////
-		var check_eventsSec:FlxUICheckBox = null;
-		var check_notesSec:FlxUICheckBox = null;
+		var y:Float = check_altAnim.y + 20;
 
-		var copyButton:FlxButton = new FlxButton(10, 140, "Copy Section", function()
-		{
-			sectionToCopy = curSec;
-		});
+		y += 15;
 
-		var pasteButton:FlxButton = new FlxButton(copyButton.x + 100, copyButton.y, "Paste Section", function()
-		{
-			/*
-			if (sectionToCopy == null)
-				return;
-			*/
+		var sep = CoolUtil.blankSprite(280, 2, 0xFF000000);
+		sep.alpha = 0.25;
+		sep.setPosition(10, y - Math.floor(sep.height / 2));
+		tab_group_section.add(sep);
 
-			var addToTime:Float = Conductor.stepCrochet * (getSectionBeats(curSec) * 4 * (curSec - sectionToCopy));
-			//trace('Time to add: ' + addToTime);
-
-			////
-			if(check_notesSec.checked) {
-				for (note in _song.notes[sectionToCopy].sectionNotes) {
-					var copiedNote = note.clone();
-					note.strumTime += addToTime;
-					_song.notes[curSec].sectionNotes.push(copiedNote);
-				}
-			}
-
-			////
-			if (check_eventsSec.checked) {
-				var sectionStart:Float = fuckFloatingPoints(getSectionStartTime(sectionToCopy));
-				var sectionEnd:Float = fuckFloatingPoints(getSectionStartTime(sectionToCopy + 1));
-				for (event in _song.events) {
-					var strumTime:Float = fuckFloatingPoints(event.strumTime);
-					if (sectionStart <= strumTime && strumTime < sectionEnd) {
-						var copiedEvent:PsychEventNote = event.clone();
-						copiedEvent.strumTime = strumTime + addToTime;
-						_song.events.push(copiedEvent);
-					}
-				}
-			}
-
-/* 			if(check_eventsSec.checked)
-			{
-				fixEvents();
-			} */
-			updateGrid();
-		});
-
-		var clearSectionButton:FlxButton = new FlxButton(pasteButton.x + 100, pasteButton.y, "Clear current", function()
-		{
-			if (check_notesSec.checked) {
-				_song.notes[curSec].sectionNotes.resize(0);
-				updateNoteUI();
-			}
-
-			if (check_eventsSec.checked) {
-				var startThing:Float = sectionStartTime();
-				var endThing:Float = sectionStartTime(1);
-				var filteredEvents = _song.events.filter(function(event:PsychEventNote) {
-					return startThing <= event.strumTime && event.strumTime < endThing;
-				});
-				
-				for (event in filteredEvents) {
-					if (event == curSelectedEvent) {
-						curSelectedEvent = null;
-						changeEventSelected();
-					}
-					_song.events.remove(event);
-				}
-			}
-			updateGrid();
-		});
-		clearSectionButton.color = FlxColor.RED;
-		clearSectionButton.label.color = FlxColor.WHITE;
-		
-		check_notesSec = new FlxUICheckBox(10, clearSectionButton.y + 25, null, null, "Notes", 35);
-		check_notesSec.checked = true;
-		check_eventsSec = new FlxUICheckBox(check_notesSec.x + 105, check_notesSec.y, null, null, "Events", 50);
-		check_eventsSec.checked = true;
+		y += 15;
 
 		////
+		var check_notesSec = new FlxUICheckBox(10, y, null, null, "Notes", 100);
+		check_notesSec.checked = true;
+
+		var check_eventsSec = new FlxUICheckBox(10, y + 30, null, null, "Events", 100);
+		check_eventsSec.checked = true;
+
+		//
+		var x:Float = check_notesSec.x + 100;
+
+		var copyButton = new FlxUIButton(x, y, "Select current", () -> sectionToCopy = curSec);
+
+		var pasteButton = new FlxUIButton(x, y + 30, "Paste selected", () -> copySection(curSec, sectionToCopy, check_notesSec.checked, check_eventsSec.checked));
+		pasteButton.color = FlxColor.ORANGE;
+		pasteButton.label.color = FlxColor.WHITE;
+
+		var clearSectionButton = new FlxUIButton(x, y + 60, "Clear current", () -> clearSection(curSec, check_notesSec.checked, check_eventsSec.checked));
+		clearSectionButton.color = FlxColor.RED;
+		clearSectionButton.label.color = FlxColor.WHITE;
+
+		//
+		var x:Float = x + 100 + 20;
+
 		var stepperCopy:CustomFlxUINumericStepper = null;
-		var copyLastButton:FlxButton = new FlxButton(10, 220, "Copy last section", function()
-		{
+		var copyLastButton:FlxUIButton = null;
+
+		copyLastButton = new FlxUIButton(x, y, "Copy last Section", function() {
 			var value:Int = Std.int(stepperCopy.value);
-			if(value == 0) return;
+			if (value == 0) return;
 
-			var secToCopy:Int = curSec - value;
-			if (secToCopy < 0) return;
+			var copyIdx:Int = curSec - value;
+			if (copyIdx < 0) return;
 
-			var startThing:Float = getSectionStartTime(secToCopy);
-			var sectionsTimeDiff:Float = getSectionStartTime(curSec) - startThing;
-
-			if(check_notesSec.checked){
-				var notesToCopy = _song.notes[secToCopy].sectionNotes;
-				var sectionNotes = _song.notes[curSec].sectionNotes;
-				for (i in 0...notesToCopy.length)
-				{
-					var copiedNote:NoteData = notesToCopy[i].clone();
-					copiedNote.strumTime += sectionsTimeDiff;
-					sectionNotes.push(copiedNote);
-				}
-			}
-
-			if(check_eventsSec.checked){
-				var endThing:Float = getSectionStartTime(secToCopy + 1);
-				for (event in _song.events)
-				{					
-					var eventStrumTime:Float = fuckFloatingPoints(event.strumTime);
-					if (startThing <= eventStrumTime && eventStrumTime < endThing)
-					{
-						var copiedEvent = event.clone();
-						copiedEvent.strumTime = eventStrumTime + sectionsTimeDiff;
-						_song.events.push(copiedEvent);
-					}
-				}
-/* 				fixEvents(); */
-			}
-			updateGrid();
+			////
+			copySection(curSec, copyIdx, true, true);
 		});
-		copyLastButton.setGraphicSize(80, 30);
-		copyLastButton.updateHitbox();
+		copyLastButton.resize(60, 30);
 		
-		stepperCopy = new CustomFlxUINumericStepper(copyLastButton.x + 100, copyLastButton.y, 1, 1, -999, 999, 0);
+		stepperCopy = new CustomFlxUINumericStepper(x, y + 40, 1, 1, -999, 999, 0);
 		blockPressWhileTypingOnStepper.push(stepperCopy);
 
-		var swapSection:FlxButton = new FlxButton(10, copyLastButton.y + 80, "Swap sides", function()
-		{
-			for (note in _song.notes[curSec].sectionNotes)
-			{
-				note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
-			}
+		////
+		var y:Float = clearSectionButton.y + 20;
 
-			updateGrid();
-		});
+		y += 15;
 
-		var duetButton:FlxButton = new FlxButton(swapSection.x + 100, swapSection.y, "Duet Notes", function()
-		{
-			var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSec].sectionNotes) note.clone()];
+		var sep = CoolUtil.blankSprite(280, 2, 0xFF000000);
+		sep.alpha = 0.25;
+		sep.setPosition(10, y - Math.floor(sep.height / 2));
+		tab_group_section.add(sep);
 
-			for (note in copiedNotes) {
-				if (Math.floor(note.column / _song.keyCount) % 2 == 1)
-					note.column -= _song.keyCount;
-				else
-					note.column += _song.keyCount;
+		y += 15;
 
-				_song.notes[curSec].sectionNotes.push(note);
-			}
-			
-			copiedNotes.resize(0);
-			copiedNotes = null;
+		////
+		var swapSection = new FlxUIButton(10, y, "Swap sides", section_swapSides);
 
-			updateGrid();
-		});
+		var duetButton = new FlxUIButton(swapSection.x + 100, y, "Duet Notes", section_duetNotes);
 
-		var mirrorButton:FlxButton = new FlxButton(duetButton.x + 100, duetButton.y, "Mirror Notes", function()
-		{
-			for (note in _song.notes[curSec].sectionNotes)
-			{
-				var boob:Int = note.column % _song.keyCount;
-				boob = _song.keyCount - 1 - boob;
-				if (note.column >= _song.keyCount) boob += _song.keyCount;
+		var mirrorButton = new FlxUIButton(duetButton.x + 100, y, "Mirror Notes", section_mirrorNotes);
 
-				note.column = boob;
-			}
+		////
+		tooltips.add(check_notesSec.button, simpleTip("Whether notes should be affected when copying/clearing sections"));
+		tooltips.add(check_eventsSec.button, simpleTip("Whether events should be affected when copying/clearing sections"));
+		
+		tooltips.add(copyButton, simpleTip("Select the current section to be copied"));
+		tooltips.add(pasteButton, simpleTip("Copy the selected section's notes and events to the current section"));
+		tooltips.add(clearSectionButton, simpleTip("Clear the current section's notes and events"));
 
-			updateGrid();
-		});
+		tooltips.add(swapSection, simpleTip("Swaps the notes in the current section between the player and opponent fields"));
+		tooltips.add(duetButton, simpleTip("Copies the notes in the current section and pastes them on the opposite fields"));
+		tooltips.add(mirrorButton, simpleTip("Mirrors the notes in the current section for each field horizontally"));
 
+		////
 		tab_group_section.add(new FlxText(stepperBeats.x, stepperBeats.y - 15, 0, 'Beats per Section:'));
 		tab_group_section.add(stepperBeats);
 		tab_group_section.add(stepperSectionBPM);
@@ -1370,9 +1379,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_section.add(clearSectionButton);
 		tab_group_section.add(check_notesSec);
 		tab_group_section.add(check_eventsSec);
-		tab_group_section.add(swapSection);
 		tab_group_section.add(stepperCopy);
 		tab_group_section.add(copyLastButton);
+		tab_group_section.add(swapSection);
 		tab_group_section.add(duetButton);
 		tab_group_section.add(mirrorButton);
 
@@ -1558,22 +1567,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		new SeparateSubEventAction(curSelectedEvent, subEventIdx);
 	}
 
-	inline function newSquareButton(x:Float, y:Float, label:String, ?callback:Void->Void) {
-		var button = new FlxUIButton(x, y, label, callback, false);
-		button.label.size = 12;
-		button.resize(20, 20);
-		button.setSize(20, 20);
-		return button;
-	}
-
-	function setAllLabelsOffset(button:FlxButton, x:Float, y:Float)
-	{
-		for (point in button.labelOffsets)
-		{
-			point.set(x, y);
-		}
-	}
-
 	function addEventsUI():Void
 	{
 		var tab_group_event = new FlxUI(null, UI_box);
@@ -1657,45 +1650,31 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockPressWhileTypingOn.push(value2InputText);
 
 		////
-		var removeButton = newSquareButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent);
+		var removeButton = new FlxUIButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent, false);
 		removeButton.name = 'event_removeSub';
 		removeButton.color = FlxColor.RED;
 		removeButton.label.color = FlxColor.WHITE;
+		removeButton.resize(20, 20);
 		
-		var addButton = newSquareButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', addNewSubEvent);
+		var addButton = new FlxUIButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', addNewSubEvent, false);
 		addButton.name = 'eventNote_addSub';
 		addButton.color = FlxColor.GREEN;
 		addButton.label.color = FlxColor.WHITE;
-		
-		var moveLeftButton = newSquareButton(addButton.x + addButton.width + 20, addButton.y, '<', subEventLeft);
-		addButton.name = 'eventNote_subLeft';
+		addButton.resize(20, 20);		
 
-		var moveRightButton = newSquareButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', subEventRight);
-		addButton.name = 'eventNote_subRight';
+		var moveLeftButton = new FlxUIButton(addButton.x + addButton.width + 20, addButton.y, '<', subEventLeft);
+		moveLeftButton.name = 'eventNote_subLeft';
+		moveLeftButton.resize(20, 20);
+
+		var moveRightButton = new FlxUIButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', subEventRight);
+		moveRightButton.name = 'eventNote_subRight';
+		moveRightButton.resize(20, 20);
 		
 		selectedEventText = new FlxText(addButton.x - 100, addButton.y - 6, (moveRightButton.x - addButton.x) + 186, 'No event stack selected');
 		selectedEventText.y -= selectedEventText.height;
 		selectedEventText.alignment = CENTER;
 
 		////
-		inline function fontDef()
-			return new flixel.addons.ui.FontDef(flixel.system.FlxAssets.FONT_DEFAULT);
-
-		inline function oneLineTip(title:String, ?width:Int):flixel.addons.ui.FlxUITooltipManager.FlxUITooltipData {
-			var anchor = new flixel.addons.ui.Anchor(0, 2, "center", "bottom", "center", "top");
-			
-			var titleFontDef = fontDef();
-			titleFontDef.format.align = "center";
-			
-			return {title: title, body: "", anchor: anchor, style: {titleWidth: width, bodyWidth: width, titleFormat: titleFontDef}};
-		}
-		
-		inline function simpleTip(title:String, body:String):flixel.addons.ui.FlxUITooltipManager.FlxUITooltipData {
-			var fontDef = fontDef();
-			fontDef.format.align = "left";
-			return {title: title, body: body, delay: 1, style: {titleFormat: fontDef, bodyFormat: fontDef}};
-		}
-
 		var td = simpleTip("Move left", "Select the left event.\nHold SHIFT to change the order of the selected event instead");
 		td.anchor = new flixel.addons.ui.Anchor(0, 2, "center", "bottom", "center", "top");
 		td.style.bodyWidth = 172;
@@ -1709,8 +1688,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tooltips.add(separateButton, simpleTip("Separate", "Separate the selected Sub-Event into its own event note"));
 
 		/* wow thanks for the tip i would have never guessed otherwise */
-		tooltips.add(addButton, oneLineTip("Add new", 48));
-		tooltips.add(removeButton, oneLineTip("Remove", 48));
+		tooltips.add(addButton, oneLineTip("Add event", 100));
+		tooltips.add(removeButton, oneLineTip("Remove event", 100));
 
 		////
 		tab_group_event.add(eventLabelStrumTime = new FlxText(eventStepperStrumTime.x, eventStepperStrumTime.y - 15, 0, 'Strum time:'));
@@ -1819,12 +1798,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		});
 
-		var loadButton = new FlxButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
+		var loadButton = new FlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
 			fileDialog.open('json', getSongPath("metadata.json"), 'Load Metadata');
 		});
 
 		////
-		var saveButton = new FlxButton(10, loadButton.y + 30, "Save Metadata", function()
+		var saveButton = new FlxUIButton(10, loadButton.y + 30, "Save Metadata", function()
 		{
 			_song.metadata.songName = songNameInputText.text;
 			_song.metadata.artist = artistInputText.text;
@@ -1965,7 +1944,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockPressWhileTypingOnStepper.push(metronomeOffsetStepper);
 
 		////
-		var customizeButton:FlxButton = new FlxButton(300 / 2, 400 - 20, 'Customize', function() {
+		var customizeButton:FlxUIButton = new FlxUIButton(300 / 2, 400 - 20, 'Customize', function() {
 			UI_box.selected_tab_id = "Customize";
 		});
 		customizeButton.x -= customizeButton.width / 2;
@@ -2022,7 +2001,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var changeColor1 = new ColorPicker(0, 0, "Color 1", color1Changed, options.gridColor1);
 		var changeColor2 = new ColorPicker(0, 0, "Color 2", color2Changed, options.gridColor2);
 
-		var resetButt = new FlxButton('Reset');
+		var resetButt = new FlxUIButton('Reset');
 		resetButt.allowSwiping = false;
 		resetButt.onUp.callback = function() {
 			options.gridColor1 = 0xffe7e6e6;
@@ -2061,7 +2040,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var oppInput = new FlxUIInputText(10, 90, 200, _song.tracks.opponent.join(','));
 		oppInput.name = "tracks_opponent";
 
-		var reloadButton = new FlxButton(10, 120, "Reload Audio", function() {
+		var reloadButton = new FlxUIButton(10, 120, "Reload Audio", function() {
 			loadTracks();
 
 			var trackNamesArray = ["None"];
@@ -3265,7 +3244,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		check_gfSection.checked = sec.gfSection;
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
-		stepperSectionBPM.value = sec.bpm;
+		stepperSectionBPM.value = sec.changeBPM ? sec.bpm : Conductor.bpm;
 
 		updateHeads();
 	}
