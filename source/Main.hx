@@ -13,7 +13,7 @@ import funkin.*;
 import funkin.api.Github;
 import funkin.macros.Sowy;
 import funkin.data.SemanticVersion;
-import funkin.objects.FPSCounter;
+import funkin.objects.DebugDisplay;
 
 #if sys
 import sys.FileSystem;
@@ -59,7 +59,7 @@ class Main extends Sprite
 	////
 	public static var instance:Main;
 	public static var game:FNFGame;
-	public static var fpsVar:FPSCounter;
+	public static var fpsVar:DebugDisplay;
 	public static var bread:Bitmap;
 
 	#if ALLOW_DEPRECATION
@@ -166,7 +166,7 @@ class Main extends Sprite
 		game = new FNFGame(gameWidth, gameHeight, initialState, framerate, framerate, skipSplash, startFullscreen);
 		addChild(game);
 
-		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
+		fpsVar = new DebugDisplay(10, 3, 0xFFFFFF);
 		fpsVar.visible = false;
 		addChild(fpsVar);
 

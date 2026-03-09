@@ -318,6 +318,15 @@ class MusicBeatState extends FlxTransitionableState
 		return section==null ? 4 : Conductor.sectionBeats(section);
 	}
 
+	public function getDebugText():String {
+		return 'curSection: ${curSection} • curBeat: ${curBeat} • curStep: ${curStep}';
+	}
+
+	override function toString():String {
+		return Type.getClassName(Type.getClass(this));
+	}
+
+	////
 	public static var curMusic:String = "";
 	public static var menuVox:FlxSound; // jukebox
 
