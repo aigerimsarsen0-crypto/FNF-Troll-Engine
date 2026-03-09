@@ -135,6 +135,8 @@
 		especially on linux where it just freezes the entire app <3 -swordcube
 	-->
 	<haxelib name="linc_filedialogs" if="desktop cpp" />
+
+	<haxelib name="hxdr_libs" if="cpp false"/>
 		
 	<!-- ______________________________ Haxedefines _____________________________ -->
 
