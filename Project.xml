@@ -140,6 +140,8 @@
 		
 	<!-- ______________________________ Haxedefines _____________________________ -->
 
+	<assets path="flixel/flixel-ui/img" embed="true"/>
+
 	<section if="CRASH_HANDLER">
 		<haxedef name="HXCPP_STACK_TRACE" />
 		<haxedef name="HXCPP_CHECK_POINTER" />

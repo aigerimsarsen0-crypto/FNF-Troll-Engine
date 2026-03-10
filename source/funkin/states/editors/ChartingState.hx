@@ -918,11 +918,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function addSongUI():Void
 	{
-		var selectSongButton = new FlxUIButton(10, 20, "Select Song", openSongSelect);
+		var selectSongButton = newFlxUIButton(10, 20, "Select Song", openSongSelect);
 
-		var saveButton:FlxUIButton = new FlxUIButton(110, 20, "Save Chart", saveLevel);
+		var saveButton:FlxUIButton = newFlxUIButton(110, 20, "Save Chart", saveLevel);
 
-		var saveEventJson:FlxUIButton = new FlxUIButton(110, saveButton.y + 30, 'Save Events', function() {
+		var saveEventJson:FlxUIButton = newFlxUIButton(110, saveButton.y + 30, 'Save Events', function() {
 			if (_song.events != null && _song.events.length > 1)
 				_song.events.sort(sortEventsByTime);
 
@@ -931,7 +931,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
 		});
 
-		var saveZipButton = new FlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
+		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
 			var zip = new funkin.data.FuckingZip();
 			zip.addString(encodeChartJson(), getChartFileName());
 			zip.addString(Json.stringify(_song.metadata), 'metadata.json');
@@ -947,12 +947,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 
 		///
-		var reloadSongJson:FlxUIButton = new FlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
+		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
 		{
 			showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
 		});
 
-		var loadAutosaveBtn:FlxUIButton = new FlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
+		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
 		{
 			var autosaved:Dynamic = options.autosave;
 			if (autosaved == null) {
@@ -987,40 +987,40 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			updateGrid();
 		}
 
-		var loadEventJson:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
+		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
 			final openEvents:Void->Void = CoolUtil.showOpenDialog.bind('Open Events', getSongPath('events.json'), ['*.json'], onOpenEvents);
 			showWarning('This action will clear the current events.\n\nProceed?', openEvents);
 		});
 
 		////
-		var editTracksButton:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
+		var editTracksButton:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
 			UI_box.selected_tab_id = "Tracks";
 		});
 
 		////
-		var fix_oob_notes:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
+		var fix_oob_notes:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
 		fix_oob_notes.color = FlxColor.PINK;
 		fix_oob_notes.label.color = FlxColor.WHITE;
 
-		var clear_events:FlxUIButton = new FlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearEvents));
+		var clear_events:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearEvents));
 		clear_events.color = FlxColor.RED;
 		clear_events.label.color = FlxColor.WHITE;
 
-		var clear_notes:FlxUIButton = new FlxUIButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearNotes));
+		var clear_notes:FlxUIButton = newFlxUIButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearNotes));
 		clear_notes.color = FlxColor.RED;
 		clear_notes.label.color = FlxColor.WHITE;
 
-		var stepperSpeed = new CustomFlxUINumericStepper(10, selectSongButton.y + 35, 0.1, 1, 0.1, 10, 1);
+		var stepperSpeed = newFlxUINumericStepper(10, selectSongButton.y + 35, 0.1, 1, 0.1, 10, 1);
 		stepperSpeed.value = _song.speed;
 		stepperSpeed.name = 'song_speed';
 		blockPressWhileTypingOnStepper.push(stepperSpeed);
 
-		var stepperBPM = new CustomFlxUINumericStepper(10, stepperSpeed.y + 35, 1, 1, 1, 9000, 3);
+		var stepperBPM = newFlxUINumericStepper(10, stepperSpeed.y + 35, 1, 1, 1, 9000, 3);
 		stepperBPM.value = Conductor.bpm;
 		stepperBPM.name = 'song_bpm';
 		blockPressWhileTypingOnStepper.push(stepperBPM);
 
-		var stepperKeyCount = new CustomFlxUINumericStepper(10, stepperBPM.y + 35, 1, 4, Note.minKeyCount, Note.maxKeyCount, 0);
+		var stepperKeyCount = newFlxUINumericStepper(10, stepperBPM.y + 35, 1, 4, Note.minKeyCount, Note.maxKeyCount, 0);
 		stepperKeyCount.value = _song.keyCount;
 		stepperKeyCount.name = 'song_keyCount';
 		blockPressWhileTypingOnStepper.push(stepperKeyCount);
@@ -1035,7 +1035,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var daY = stepperKeyCount.y + 35;
 
-		var player1DropDown = new CustomFlxUIDropDownMenu(10, daY, ddCharacters, function(character:String)
+		var player1DropDown = newFlxUIDropDownMenu(10, daY, ddCharacters, function(character:String)
 		{
 			_song.player1 = characters[Std.parseInt(character)];
 			updateHeads();
@@ -1043,7 +1043,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		player1DropDown.selectedLabel = _song.player1;
 		blockPressWhileScrolling.push(player1DropDown);
 
-		var gfVersionDropDown = new CustomFlxUIDropDownMenu(player1DropDown.x, player1DropDown.y + 40, ddCharacters, function(character:String)
+		var gfVersionDropDown = newFlxUIDropDownMenu(player1DropDown.x, player1DropDown.y + 40, ddCharacters, function(character:String)
 		{
 			_song.gfVersion = characters[Std.parseInt(character)];
 			updateHeads();
@@ -1051,7 +1051,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		gfVersionDropDown.selectedLabel = _song.gfVersion;
 		blockPressWhileScrolling.push(gfVersionDropDown);
 
-		var player2DropDown = new CustomFlxUIDropDownMenu(player1DropDown.x, gfVersionDropDown.y + 40, ddCharacters, function(character:String)
+		var player2DropDown = newFlxUIDropDownMenu(player1DropDown.x, gfVersionDropDown.y + 40, ddCharacters, function(character:String)
 		{
 			_song.player2 = characters[Std.parseInt(character)];
 			updateHeads();
@@ -1066,7 +1066,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		stages.remove("empty");
 		stages.insert(0, "empty");
 		
-		var stageDropDown = new CustomFlxUIDropDownMenu(
+		var stageDropDown = newFlxUIDropDownMenu(
 			player1DropDown.x + 140, 
 			player1DropDown.y, 
 			FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), 
@@ -1079,7 +1079,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		stageDropDown.selectedLabel = _song.stage;
 		blockPressWhileScrolling.push(stageDropDown);
 
-		var skinDropdown = new CustomFlxUIDropDownMenu(
+		var skinDropdown = newFlxUIDropDownMenu(
 			stageDropDown.x, stageDropDown.y + 40, 
 			FlxUIDropDownMenu.makeStrIdLabelArray(hudList, true), 
 			function(skin:String){
@@ -1090,12 +1090,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockPressWhileScrolling.push(skinDropdown);
 
 		var arrowSkin = _song.arrowSkin ?? '';	
-		var noteSkinInputText = new FlxUIInputText(player2DropDown.x, player2DropDown.y + 40, 150, arrowSkin, 8);
+		var noteSkinInputText = newFlxUIInputText(player2DropDown.x, player2DropDown.y + 40, 150, arrowSkin, 8);
 		noteSkinInputText.name = 'song_arrowSkin';
 		blockPressWhileTypingOn.push(noteSkinInputText);
 
 		var splashSkin = _song.splashSkin ?? '';
-		var noteSplashesInputText = new FlxUIInputText(noteSkinInputText.x, noteSkinInputText.y + 35, 150, splashSkin, 8);
+		var noteSplashesInputText = newFlxUIInputText(noteSkinInputText.x, noteSkinInputText.y + 35, 150, splashSkin, 8);
 		noteSplashesInputText.name = 'song_noteSplashes';
 		blockPressWhileTypingOn.push(noteSplashesInputText);
 		
@@ -1271,14 +1271,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		check_altAnim = new FlxUICheckBox(10, check_gfSection.y + 30, null, null, "Alt Animation", 100);
 		check_altAnim.name = 'check_altAnim';
 
-		stepperBeats = new CustomFlxUINumericStepper(150, 25, 1, 1, 1, 9000, 3);
+		stepperBeats = newFlxUINumericStepper(150, 25, 1, 1, 1, 9000, 3);
 		stepperBeats.name = 'section_beats';
 		blockPressWhileTypingOnStepper.push(stepperBeats);
 
 		check_changeBPM = new FlxUICheckBox(150, stepperBeats.y + 30, null, null, 'Change BPM', 100);
 		check_changeBPM.name = 'check_changeBPM';
 
-		stepperSectionBPM = new CustomFlxUINumericStepper(150, check_changeBPM.y + 20, 1, Conductor.bpm, 0, 999, 1);
+		stepperSectionBPM = newFlxUINumericStepper(150, check_changeBPM.y + 20, 1, Conductor.bpm, 0, 999, 1);
 		stepperSectionBPM.name = 'section_bpm';
 		blockPressWhileTypingOnStepper.push(stepperSectionBPM);
 
@@ -1304,13 +1304,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		//
 		var x:Float = check_notesSec.x + 100;
 
-		var copyButton = new FlxUIButton(x, y, "Select current", () -> sectionToCopy = curSec);
+		var copyButton = newFlxUIButton(x, y, "Select current", () -> sectionToCopy = curSec);
 
-		var pasteButton = new FlxUIButton(x, y + 30, "Paste selected", () -> copySection(curSec, sectionToCopy, check_notesSec.checked, check_eventsSec.checked));
+		var pasteButton = newFlxUIButton(x, y + 30, "Paste selected", () -> copySection(curSec, sectionToCopy, check_notesSec.checked, check_eventsSec.checked));
 		pasteButton.color = FlxColor.ORANGE;
 		pasteButton.label.color = FlxColor.WHITE;
 
-		var clearSectionButton = new FlxUIButton(x, y + 60, "Clear current", () -> clearSection(curSec, check_notesSec.checked, check_eventsSec.checked));
+		var clearSectionButton = newFlxUIButton(x, y + 60, "Clear current", () -> clearSection(curSec, check_notesSec.checked, check_eventsSec.checked));
 		clearSectionButton.color = FlxColor.RED;
 		clearSectionButton.label.color = FlxColor.WHITE;
 
@@ -1320,7 +1320,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var stepperCopy:CustomFlxUINumericStepper = null;
 		var copyLastButton:FlxUIButton = null;
 
-		copyLastButton = new FlxUIButton(x, y, "Copy last Section", function() {
+		copyLastButton = newFlxUIButton(x, y, "Copy last Section", function() {
 			var value:Int = Std.int(stepperCopy.value);
 			if (value == 0) return;
 
@@ -1332,7 +1332,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 		copyLastButton.resize(60, 30);
 		
-		stepperCopy = new CustomFlxUINumericStepper(x, y + 40, 1, 1, -999, 999, 0);
+		stepperCopy = newFlxUINumericStepper(x, y + 40, 1, 1, -999, 999, 0);
 		blockPressWhileTypingOnStepper.push(stepperCopy);
 
 		////
@@ -1348,11 +1348,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		y += 15;
 
 		////
-		var swapSection = new FlxUIButton(10, y, "Swap sides", section_swapSides);
+		var swapSection = newFlxUIButton(10, y, "Swap sides", section_swapSides);
 
-		var duetButton = new FlxUIButton(swapSection.x + 100, y, "Duet Notes", section_duetNotes);
+		var duetButton = newFlxUIButton(swapSection.x + 100, y, "Duet Notes", section_duetNotes);
 
-		var mirrorButton = new FlxUIButton(duetButton.x + 100, y, "Mirror Notes", section_mirrorNotes);
+		var mirrorButton = newFlxUIButton(duetButton.x + 100, y, "Mirror Notes", section_mirrorNotes);
 
 		////
 		tooltips.add(check_notesSec.button, simpleTip("Whether notes should be affected when copying/clearing sections"));
@@ -1403,11 +1403,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		final DECIMALS:Int = 4;
 
-		stepperSusLength = new CustomFlxUINumericStepper(10, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, new FlxUIInputText(0, 0, 120));
+		stepperSusLength = newFlxUINumericStepper(10, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, newFlxUIInputText(0, 0, 120));
 		stepperSusLength.name = 'note_susLength';
 		blockPressWhileTypingOnStepper.push(stepperSusLength);
 
-		stepperStrumTime = new CustomFlxUINumericStepper(10, 65, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, new FlxUIInputText(0, 0, 120));
+		stepperStrumTime = newFlxUINumericStepper(10, 65, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, newFlxUIInputText(0, 0, 120));
 		stepperStrumTime.name = 'note_strumTime';
 		blockPressWhileTypingOnStepper.push(stepperStrumTime);
 
@@ -1423,7 +1423,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			noteTypeSnlArray.push(snl); 
 		}
 
-		noteTypeDropDown = new CustomFlxUIDropDownMenu(10, 105, noteTypeSnlArray, function(character:String)
+		noteTypeDropDown = newFlxUIDropDownMenu(10, 105, noteTypeSnlArray, function(character:String)
 		{
 			var typeIdx = Std.parseInt(character);
 			currentNoteType = noteTypeList[typeIdx];
@@ -1439,7 +1439,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 		blockPressWhileScrolling.push(noteTypeDropDown);
 
-		noteTypeInput = new FlxUIInputText(
+		noteTypeInput = newFlxUIInputText(
 			noteTypeDropDown.header.text.x, noteTypeDropDown.header.text.y, 
 			Math.floor(noteTypeDropDown.header.text.fieldWidth), 
 			noteTypeDropDown.header.text.text,
@@ -1574,11 +1574,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		final DECIMALS:Int = 4;
 
-		eventStepperStrumTime = new CustomFlxUINumericStepper(10, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, new FlxUIInputText(0, 0, 120));
+		eventStepperStrumTime = newFlxUINumericStepper(10, 25, 1, 0, 0, Math.POSITIVE_INFINITY, DECIMALS, 1, newFlxUIInputText(0, 0, 120));
 		eventStepperStrumTime.name = 'eventNote_strumTime';
 		blockPressWhileTypingOnStepper.push(eventStepperStrumTime);
 
-		var separateButton = new FlxUIButton(eventStepperStrumTime.x + eventStepperStrumTime.width + 10, eventStepperStrumTime.y, "Separate", subEventSeparate, false);
+		var separateButton = newFlxUIButton(eventStepperStrumTime.x + eventStepperStrumTime.width + 10, eventStepperStrumTime.y, "Separate", subEventSeparate, false);
 		separateButton.name = 'eventNote_separateSub';
 		separateButton.color = FlxColor.ORANGE;
 		separateButton.label.color = FlxColor.WHITE;
@@ -1590,7 +1590,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		for (i in 0...eventStuff.length)
 			leEvents.push(eventStuff[i][0]);
 
-		eventDropDown = new CustomFlxUIDropDownMenu(
+		eventDropDown = newFlxUIDropDownMenu(
 			10, 80, 
 			FlxUIDropDownMenu.makeStrIdLabelArray(leEvents, true), 
 			function(pressed:String) {
@@ -1613,7 +1613,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		);
 		blockPressWhileScrolling.push(eventDropDown);
 
-		eventNameInput = new FlxUIInputText(
+		eventNameInput = newFlxUIInputText(
 			eventDropDown.header.text.x, eventDropDown.header.text.y, 
 			Math.floor(eventDropDown.header.text.fieldWidth), 
 			eventDropDown.header.text.text,
@@ -1641,33 +1641,35 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 		eventNameInput.focusLost = () -> onEnterEventName(eventNameInput.text);
 
-		value1InputText = new FlxUIInputText(10, 125, 116, "");
+		value1InputText = newFlxUIInputText(10, 125, 116, "");
 		value1InputText.name = 'event_value1';
 		blockPressWhileTypingOn.push(value1InputText);
 
-		value2InputText = new FlxUIInputText(10, 165, 116, "");
+		value2InputText = newFlxUIInputText(10, 165, 116, "");
 		value2InputText.name = 'event_value2';
 		blockPressWhileTypingOn.push(value2InputText);
 
 		////
-		var removeButton = new FlxUIButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent, false);
+		var removeButton = newFlxUIButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent, false);
 		removeButton.name = 'event_removeSub';
 		removeButton.color = FlxColor.RED;
 		removeButton.label.color = FlxColor.WHITE;
 		removeButton.resize(20, 20);
 		
-		var addButton = new FlxUIButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', addNewSubEvent, false);
+		var addButton = newFlxUIButton(removeButton.x + removeButton.width + 10, removeButton.y, '+', addNewSubEvent, false);
 		addButton.name = 'eventNote_addSub';
 		addButton.color = FlxColor.GREEN;
 		addButton.label.color = FlxColor.WHITE;
 		addButton.resize(20, 20);		
 
-		var moveLeftButton = new FlxUIButton(addButton.x + addButton.width + 20, addButton.y, '<', subEventLeft);
+		var moveLeftButton = newFlxUIButton(addButton.x + addButton.width + 20, addButton.y, '<', subEventLeft);
 		moveLeftButton.name = 'eventNote_subLeft';
+		moveLeftButton.label.color = FlxColor.WHITE;
 		moveLeftButton.resize(20, 20);
 
-		var moveRightButton = new FlxUIButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', subEventRight);
+		var moveRightButton = newFlxUIButton(moveLeftButton.x + moveLeftButton.width + 10, moveLeftButton.y, '>', subEventRight);
 		moveRightButton.name = 'eventNote_subRight';
+		moveRightButton.label.color = FlxColor.WHITE;
 		moveRightButton.resize(20, 20);
 		
 		selectedEventText = new FlxText(addButton.x - 100, addButton.y - 6, (moveRightButton.x - addButton.x) + 186, 'No event stack selected');
@@ -1758,23 +1760,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var tab_group = new FlxUI(null, UI_box);
 		tab_group.name = 'Metadata';
 
-		var songNameInputText = new FlxUIInputText(10, 30, 180, _song.metadata.songName);
+		var songNameInputText = newFlxUIInputText(10, 30, 180, _song.metadata.songName);
 		songNameInputText.name = "metadata_songName";
 		blockPressWhileTypingOn.push(songNameInputText);
 
-		var artistInputText = new FlxUIInputText(10, songNameInputText.y + 30, 180, _song.metadata.artist);
+		var artistInputText = newFlxUIInputText(10, songNameInputText.y + 30, 180, _song.metadata.artist);
 		artistInputText.name = "metadata_artist";
 		blockPressWhileTypingOn.push(artistInputText);
 
-		var charterInputText = new FlxUIInputText(10, artistInputText.y + 30, 180, _song.metadata.charter);
+		var charterInputText = newFlxUIInputText(10, artistInputText.y + 30, 180, _song.metadata.charter);
 		charterInputText.name = "metadata_charter";
 		blockPressWhileTypingOn.push(charterInputText);
 
-		var modcharterInputText = new FlxUIInputText(10, charterInputText.y + 30, 180, _song.metadata.modcharter);
+		var modcharterInputText = newFlxUIInputText(10, charterInputText.y + 30, 180, _song.metadata.modcharter);
 		modcharterInputText.name = "metadata_modcharter";
 		blockPressWhileTypingOn.push(modcharterInputText);
 
-		var extraInfoInputText = new FlxUIInputText(10, modcharterInputText.y + 30, 180, (_song.metadata.extraInfo?.join(',') ?? ""));
+		var extraInfoInputText = newFlxUIInputText(10, modcharterInputText.y + 30, 180, (_song.metadata.extraInfo?.join(',') ?? ""));
 		extraInfoInputText.name = "metadata_extraInfo";
 		blockPressWhileTypingOn.push(extraInfoInputText);
 
@@ -1798,12 +1800,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		});
 
-		var loadButton = new FlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
+		var loadButton = newFlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
 			fileDialog.open('json', getSongPath("metadata.json"), 'Load Metadata');
 		});
 
 		////
-		var saveButton = new FlxUIButton(10, loadButton.y + 30, "Save Metadata", function()
+		var saveButton = newFlxUIButton(10, loadButton.y + 30, "Save Metadata", function()
 		{
 			_song.metadata.songName = songNameInputText.text;
 			_song.metadata.artist = artistInputText.text;
@@ -1848,7 +1850,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		for (trackName in soundTracksMap.keys())
 			trackNamesArray.push(trackName);
 
-		waveformTrackDropDown = new CustomFlxUIDropDownMenu(
+		waveformTrackDropDown = newFlxUIDropDownMenu(
 			col1X, 80, 
 			FlxUIDropDownMenu.makeStrIdLabelArray(trackNamesArray, false), 
 			selectTrack
@@ -1937,14 +1939,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		metronome.callback = () -> {options.metronome = metronome.checked;}
 		metronome.checked = options.metronome == true;
 
-		metronomeStepper = new CustomFlxUINumericStepper(metronome.x + 100, metronome.y, 5, Conductor.bpm, 1, 9000, 3);
+		metronomeStepper = newFlxUINumericStepper(metronome.x + 100, metronome.y, 5, Conductor.bpm, 1, 9000, 3);
 		metronomeStepper.name = "metronome_BPM";
-		metronomeOffsetStepper = new CustomFlxUINumericStepper(metronomeStepper.x + 100, metronomeStepper.y, 25, 0, 0, 1000, 1);
+		metronomeOffsetStepper = newFlxUINumericStepper(metronomeStepper.x + 100, metronomeStepper.y, 25, 0, 0, 1000, 1);
 		blockPressWhileTypingOnStepper.push(metronomeStepper);
 		blockPressWhileTypingOnStepper.push(metronomeOffsetStepper);
 
 		////
-		var customizeButton:FlxUIButton = new FlxUIButton(300 / 2, 400 - 20, 'Customize', function() {
+		var customizeButton:FlxUIButton = newFlxUIButton(300 / 2, 400 - 20, 'Customize', function() {
 			UI_box.selected_tab_id = "Customize";
 		});
 		customizeButton.x -= customizeButton.width / 2;
@@ -2001,7 +2003,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var changeColor1 = new ColorPicker(0, 0, "Color 1", color1Changed, options.gridColor1);
 		var changeColor2 = new ColorPicker(0, 0, "Color 2", color2Changed, options.gridColor2);
 
-		var resetButt = new FlxUIButton('Reset');
+		var resetButt = newFlxUIButton('Reset');
 		resetButt.allowSwiping = false;
 		resetButt.onUp.callback = function() {
 			options.gridColor1 = 0xffe7e6e6;
@@ -2029,18 +2031,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var tab_group_tracks = new FlxUI(null, UI_box);
 		tab_group_tracks.name = 'Tracks';
 
-		var instInput = new FlxUIInputText(10, 30, 200, _song.tracks.inst.join(','));
+		var instInput = newFlxUIInputText(10, 30, 200, _song.tracks.inst.join(','));
 		instInput.name = "tracks_inst";
 
 		_song.tracks.player ??= [];
-		var playInput = new FlxUIInputText(10, 60, 200, _song.tracks.player.join(','));
+		var playInput = newFlxUIInputText(10, 60, 200, _song.tracks.player.join(','));
 		playInput.name = "tracks_player";
 
 		_song.tracks.opponent ??= [];
-		var oppInput = new FlxUIInputText(10, 90, 200, _song.tracks.opponent.join(','));
+		var oppInput = newFlxUIInputText(10, 90, 200, _song.tracks.opponent.join(','));
 		oppInput.name = "tracks_opponent";
 
-		var reloadButton = new FlxUIButton(10, 120, "Reload Audio", function() {
+		var reloadButton = newFlxUIButton(10, 120, "Reload Audio", function() {
 			loadTracks();
 
 			var trackNamesArray = ["None"];
@@ -3896,6 +3898,58 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 		super.destroy();
+	}
+
+	//// 
+	// TODO: move this stuff somewhere else
+	static var textBgColor = 0xFF383A46;
+
+	static inline function newFlxUIButton(X:Float = 0, Y:Float = 0, ?Label:String, ?OnClick:Void->Void, ?LoadDefaultGraphics:Bool = true, ?LoadBlank:Bool = false, ?Color:FlxColor = FlxColor.WHITE)
+	{
+		var btn = new FlxUIButton(X, Y, Label, OnClick, LoadDefaultGraphics, LoadBlank, Color);
+		btn.label.color = FlxColor.WHITE;
+		return btn;
+	}
+
+	static inline function newFlxUINumericStepper(
+			X:Float = 0, Y:Float = 0, 
+			StepSize:Float = 1, DefaultValue:Float = 0, Min:Float = -999, Max:Float = 999, Decimals:Int = 0,
+			Stack:Int = FlxUINumericStepper.STACK_HORIZONTAL, 
+			?TextField:FlxText, ?ButtonPlus:FlxUITypedButton<FlxSprite>, ?ButtonMinus:FlxUITypedButton<FlxSprite>,
+			IsPercent:Bool = false
+	) 
+	@:privateAccess {
+		var stepper = new CustomFlxUINumericStepper(X, Y, StepSize, DefaultValue, Min, Max, Decimals, Stack, TextField, ButtonPlus, ButtonMinus, IsPercent);
+		
+		var fit = stepper.text_field;
+		if (fit is FlxInputText)
+			setupInputText(cast fit);
+
+		stepper.button_plus.label.color = FlxColor.WHITE;
+		stepper.button_minus.label.color = FlxColor.WHITE;
+
+		return stepper;
+	}
+
+	static inline function newFlxUIInputText(X:Float = 0, Y:Float = 0, Width:Int = 150, ?Text:String, size:Int = 8, TextColor:Int = FlxColor.BLACK,
+			BackgroundColor:Int = FlxColor.WHITE, EmbeddedFont:Bool = true) {
+		var fit = new FlxUIInputText(X, Y, Width, Text, size, TextColor, BackgroundColor, EmbeddedFont);
+		setupInputText(fit);
+		return fit;
+	}
+
+	static inline function setupInputText(fit:FlxInputText) {
+		fit.backgroundColor = textBgColor;
+		fit.color = FlxColor.WHITE;
+		fit.caretColor = FlxColor.WHITE;
+	}
+
+	static inline function newFlxUIDropDownMenu(X:Float = 0, Y:Float = 0, DataList:Array<StrNameLabel>, ?Callback:String->Void, ?Header:FlxUIDropDownHeader,
+			?DropPanel:FlxUI9SliceSprite, ?ButtonList:Array<FlxUIButton>, ?UIControlCallback:Bool->FlxUIDropDownMenu->Void) {
+		var ddm = new CustomFlxUIDropDownMenu(X, Y, DataList, Callback, Header, DropPanel, ButtonList, UIControlCallback);
+		ddm.header.background.color = textBgColor;
+		ddm.header.text.color = FlxColor.WHITE;
+		return ddm;
 	}
 }
 
