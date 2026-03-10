@@ -248,42 +248,6 @@ class MusicBeatState extends FlxTransitionableState
 		if(curSection > lastSection) sectionHit();
 	}
 
-	public static function switchState(nextState:NextState)
-	{
-		FlxG.autoPause = false;
-		FlxG.mouse.visible = false;
-		Mouse.cursor = MouseCursor.AUTO;
-
-		FlxG.switchState(nextState); // just because im too lazy to goto every instance of switchState and change it to a FlxG call
-	}
-
-	public static function resetState(?skipTrans:Bool = false) {
-		if (skipTrans) {
-			FlxTransitionableState.skipNextTransIn = true;
-			FlxTransitionableState.skipNextTransOut = true;
-		}
-
-		#if SCRIPTABLE_STATES
-		if (FlxG.state is HScriptOverridenState) {
-			var state:HScriptOverridenState = cast FlxG.state;
-			var overriden = HScriptOverridenState.fromAnother(state);
-
-			if (overriden!=null) {
-				FlxG.switchState(overriden);
-			}else {
-				trace("State override script file is gone!", "Switching to", state.parentClass);
-				FlxG.switchState(Type.createInstance(state.parentClass, []));
-			}
-		} else
-		#end
-			FlxG.resetState();
-	}
-
-	public static function getState():MusicBeatState
-	{
-		return cast FlxG.state;
-	}
-
 	function resyncTracks() {
 		Conductor.resyncTracks();
 		lastMixPos = Conductor.songPosition;
@@ -370,11 +334,48 @@ class MusicBeatState extends FlxTransitionableState
 	}
 
 	// TODO: check the jukebox selection n shit and play THAT instead? idk lol
+	// ^ this was a TGT comment but re-adding the jukebox menu as part of freeplay would be nice I think
 	public static function playMenuMusic(force:Bool = false) {
 		if (!force && isPlayingMusic())
 			return;
 
 		MusicBeatState.playMusic('freakyMenu', true);
 		FlxG.sound.music.looped = true;
-	}	
+	}
+
+	public static function switchState(nextState:NextState)
+	{
+		FlxG.autoPause = false;
+		FlxG.mouse.visible = false;
+		Mouse.cursor = MouseCursor.AUTO;
+
+		FlxG.switchState(nextState); // just because im too lazy to goto every instance of switchState and change it to a FlxG call
+	}
+
+	public static function resetState(?skipTrans:Bool = false) {
+		if (skipTrans) {
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+		}
+
+		#if SCRIPTABLE_STATES
+		if (FlxG.state is HScriptOverridenState) {
+			var state:HScriptOverridenState = cast FlxG.state;
+			var overriden = HScriptOverridenState.fromAnother(state);
+
+			if (overriden!=null) {
+				FlxG.switchState(overriden);
+			}else {
+				trace("State override script file is gone!", "Switching to", state.parentClass);
+				FlxG.switchState(Type.createInstance(state.parentClass, []));
+			}
+		} else
+		#end
+			FlxG.resetState();
+	}
+
+	public static function getState():MusicBeatState
+	{
+		return cast FlxG.state;
+	}
 }
