@@ -91,6 +91,10 @@ class Main extends Sprite
 		super();
 		instance = this;
 
+		#if CRASH_HANDLER
+		CrashHandler.init();
+		#end
+
 		#if (windows && cpp)
 		funkin.api.Darkfriend.setDarkMode(!funkin.api.Darkfriend.isLightTheme());
 		#end
