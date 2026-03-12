@@ -218,16 +218,16 @@ class Character extends FlxSprite
 		switch (fileType)
 		{
 			case "texture":	
-				frames = Paths.getTextureAtlas(imageFile);
+				frames = Paths.animateAtlas(imageFile);
 				isAnimate = true;
-			case "packer":	frames = Paths.getPackerAtlas(imageFile);
+			case "packer":	frames = Paths.packerAtlas(imageFile);
 			case "sparrow":	
-				var frames:FlxAtlasFrames = Paths.getSparrowAtlas(imageFile);
+				var frames:FlxAtlasFrames = Paths.sparrowAtlas(imageFile);
 				if(json.images != null && json.images.length > 0){
 					for(i in json.images){
 						if (!atlases.contains(i)) {
 							atlases.push(i);
-							var subAtlas:FlxAtlasFrames = Paths.getSparrowAtlas(i);
+							var subAtlas:FlxAtlasFrames = Paths.sparrowAtlas(i);
 							if (subAtlas==null)continue;
 							@:privateAccess
 							if (!frames.usedGraphics.contains(subAtlas.parent))
@@ -269,7 +269,7 @@ class Character extends FlxSprite
 					if(anim.image == null)continue;
 					if(!atlases.contains(anim.image)){
 						atlases.push(anim.image);
-						var subAtlas:FlxAtlasFrames = Paths.getSparrowAtlas(anim.image);
+						var subAtlas:FlxAtlasFrames = Paths.sparrowAtlas(anim.image);
 						var frames: FlxAtlasFrames = cast frames;
 						@:privateAccess
 						if (!frames.usedGraphics.contains(subAtlas.parent))

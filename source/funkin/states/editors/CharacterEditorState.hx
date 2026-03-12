@@ -963,11 +963,11 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		}
 
 		if (Paths.fileExists('images/' + char.imageFile + '/Animation.json', TEXT)) {
-			char.frames = Paths.getTextureAtlas(char.imageFile);
+			char.frames = Paths.animateAtlas(char.imageFile);
 		} else if (Paths.fileExists('images/' + char.imageFile + '.txt', TEXT)) {
-			char.frames = Paths.getPackerAtlas(char.imageFile);
+			char.frames = Paths.packerAtlas(char.imageFile);
 		} else {
-			char.frames = Paths.getSparrowAtlas(char.imageFile);
+			char.frames = Paths.sparrowAtlas(char.imageFile);
 		}
 
 		if (char.animationsArray != null && char.animationsArray.length > 0) {

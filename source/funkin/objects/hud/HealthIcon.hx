@@ -20,7 +20,7 @@ using StringTools;
 	// Maybe the prefix constants should be in the health icon instead???
 	
 	override function changeIcon(char:String){
-		frames = Paths.getSparrowAtlas('icons/$char');
+		frames = Paths.sparrowAtlas('icons/$char');
 		animation.addByPrefix("idle", IDLE_PREFIX, 24);
 		animation.addByPrefix("losing", LOSING_PREFIX, 24);
 		final animFrames:Array<FlxFrame> = new Array<FlxFrame>();
