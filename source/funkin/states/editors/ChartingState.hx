@@ -2208,6 +2208,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					updateGrid();
 					updateHeads();
 				case 'check_changeBPM':
+					_song.notes[curSection].bpm = stepperSectionBPM.value;
 					_song.notes[curSection].changeBPM = check.checked;
 					
 					Conductor.mapBPMChanges(_song);

@@ -233,7 +233,7 @@ class MusicBeatState extends FlxTransitionableState
 		while (curStep >= sectionEndStep) {
 			curSection++;
 			sectionEndStep += getStepsOnSection();
-			sectionHit();
+			_sectionHit();
 		}
 	}
 
@@ -255,7 +255,15 @@ class MusicBeatState extends FlxTransitionableState
 
 		////
 		if (curSection > lastSection)
-			sectionHit();
+			_sectionHit();
+	}
+
+	private function _sectionHit() {
+		var sectionData = PlayState.SONG.notes[curSection];
+		if (sectionData?.changeBPM)
+			Conductor.changeBPM(sectionData.bpm);
+
+		sectionHit();
 	}
 
 	function resyncTracks() {

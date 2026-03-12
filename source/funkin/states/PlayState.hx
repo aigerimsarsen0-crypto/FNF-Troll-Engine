@@ -2386,6 +2386,8 @@ class PlayState extends MusicBeatState
 			else if (!startedSong) {
 				if (lagSpikesEnded()) {
 					Conductor.songPosition += elapsed * 1000;
+					Conductor.updateSteps();
+
 					if (Conductor.songPosition >= PlayState.startOnTime) {
 						startSong(PlayState.startOnTime);
 						PlayState.startOnTime = 0;
@@ -3619,21 +3621,13 @@ class PlayState extends MusicBeatState
 		if (camZooming && zoomEveryBeat < 0)
 			cameraBump();
 
-		if (sectionData.changeBPM) {
-			Conductor.changeBPM(sectionData.bpm);
-
-			setOnScripts('curBpm', Conductor.bpm);
-			setOnScripts('crochet', Conductor.crochet);
-			setOnScripts('stepCrochet', Conductor.stepCrochet);
-		}
+		if (generatedMusic && !endingSong)
+			moveCameraSection(sectionData);
 
 		setOnScripts("curSection", curSection);
 		setOnScripts('sectionData', sectionData);
 
 		callOnScripts("onSectionHit");
-
-		if (generatedMusic && !endingSong)
-			moveCameraSection(sectionData);
 	}
 
 	inline public function callOnAllScripts(event:String, ?args:Array<Dynamic>, ignoreStops:Bool = false, ?exclusions:Array<String>, ?scriptArray:Array<Dynamic>,
