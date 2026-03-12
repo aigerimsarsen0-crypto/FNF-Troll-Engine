@@ -61,7 +61,7 @@ function onCreateCutscene()
 	game.camGame.zoom = 1.2;
 	
 	tankmanimate = new FlxAnimate(game.dadGroup.x, game.dadGroup.y);
-	tankmanimate.frames = Paths.textureAtlas('cutscenes/stress/tankman');
+	tankmanimate.frames = Paths.animateAtlas('cutscenes/stress/tankman');
 	tankmanimate.applyStageMatrix = true;
 	tankmanimate.x += game.dad.positionArray[0];
 	tankmanimate.y += game.dad.positionArray[1];
@@ -76,7 +76,7 @@ function onCreateCutscene()
 	game.addBehindDad(tankmanimate);
 
 	boyfrimate = new FlxAnimate(game.boyfriendGroup.x, game.boyfriendGroup.y);
-	boyfrimate.frames = Paths.textureAtlas('cutscenes/stress/boyfriend');
+	boyfrimate.frames = Paths.animateAtlas('cutscenes/stress/boyfriend');
 	boyfrimate.applyStageMatrix = true;
 	boyfrimate.x += game.boyfriend.positionArray[0];
 	boyfrimate.y += game.boyfriend.positionArray[1];
@@ -93,7 +93,7 @@ function onCreateCutscene()
 	game.addBehindDad(boyfrimate);
 
 	speakimate = new FlxAnimate(game.gfGroup.x, game.gfGroup.y);
-	speakimate.frames = Paths.textureAtlas('cutscenes/stress/gfpico');
+	speakimate.frames = Paths.animateAtlas('cutscenes/stress/gfpico');
 	speakimate.applyStageMatrix = true;
 	speakimate.x += game.gf.positionArray[0];
 	speakimate.y += game.gf.positionArray[1];

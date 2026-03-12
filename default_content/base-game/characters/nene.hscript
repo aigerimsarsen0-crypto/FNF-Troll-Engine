@@ -119,12 +119,12 @@ function setupCharacter() {
 	
 
 	pupil = new FlxAnimate(0, 0);
-	pupil.frames = Paths.textureAtlas('characters/abot/systemEyes');
+	pupil.frames = Paths.animateAtlas('characters/abot/systemEyes');
 	pupil.anim.addByTimeline("", pupil.library.timeline);
 	pupil.anim.play("");
 
 	abot = new FlxAnimate(0, 0);
-	abot.frames = Paths.textureAtlas('characters/abot/abotSystem');
+	abot.frames = Paths.animateAtlas('characters/abot/abotSystem');
 	abot.anim.addByTimeline("", abot.library.timeline);
 	// abotViz = new ABotVis(FlxG.sound.music, false);
 	var visFrms:FlxAtlasFrames = Paths.sparrowAtlas('characters/abot/aBotViz');
