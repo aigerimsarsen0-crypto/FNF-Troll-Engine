@@ -78,7 +78,7 @@ typedef ChartingStateOptions = {
 	For editor settings that should be saved check `ChartingStateOptions` instead.
 **/
 typedef ChartingStateSession = {
-	var curSec:Int;
+	var curSection:Int;
 	var songPosition:Float;
 	var selectedTrack:String;
 	var trackVolumes:Map<String, Float>;
@@ -95,7 +95,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		selectedTrack: "None",
 		trackVolumes: ["Inst" => 0.6],
 		songPosition: 0.0,
-		curSec: 0,
+		curSection: 0,
 	}
 
 	public static function getDefaultOptions():ChartingStateOptions return {
@@ -205,8 +205,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var fieldSeparators:FlxTypedGroup<FlxSprite>;
 
 	var _song:SwagSong;
-
-	var curSec:Int = 0;
 
 	/* WILL BE THE CURRENT / LAST PLACED NOTE */
 	var curSelectedNote:NoteData = null;
@@ -635,7 +633,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		Conductor.cleanup();
 		Conductor.mapBPMChanges(_song);
-		Conductor.changeBPM(_song.bpm);
+		Conductor.bpm = (_song.bpm);
 		metroInterval = (60 / _song.bpm) * 1000;
 
 		this.tracks = Conductor.tracks;
@@ -643,9 +641,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		Conductor.songPosition = _session.songPosition;
 		
-		curSec = _session.curSec;
-		if (curSec >= _song.notes.length)
-			curSec = _song.notes.length - 1;
+		curSection = _session.curSection;
+		if (curSection >= _song.notes.length)
+			curSection = _song.notes.length - 1;
 
 		////
 		progressBar.maxValue = songLength;
@@ -689,7 +687,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		////
 		hudSkin = _song.hudSkin;
 		updateKeyCount(_song.keyCount);
-		changeSection(curSec, false);	
+		changeSection(curSection, false);	
 
 		//
 		var lastSelectedTrack = _session.selectedTrack;
@@ -838,7 +836,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var beat:Float = 0;
 		for (i => section in allSections) {			
 			if (section.changeBPM)
-				Conductor.changeBPM(section.bpm);
+				Conductor.bpm = (section.bpm);
 
 			while (section.sectionNotes.length > 0) {
 				var note = section.sectionNotes.pop();
@@ -849,7 +847,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			sectionStarts[i] = fuckFloatingPoints(Conductor.stepToMs(beat * 4));
 			beat += getSectionBeats(i);
 		}
-		Conductor.changeBPM(bimp);
+		Conductor.bpm = (bimp);
 		
 		allNotes.sort((a, b) -> return Std.int(b.strumTime - a.strumTime)); // descending order
 
@@ -1191,7 +1189,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		////
 		var sectionStart:Float = getSectionStartTime(copyIdx);
-		var addToTime:Float = getSectionStartTime(curSec) - sectionStart;
+		var addToTime:Float = getSectionStartTime(curSection) - sectionStart;
 
 		////
 		if (copyNotes) {
@@ -1216,18 +1214,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		// the user can't copy to a section that isn't the current one but why not check anyway
-		if (Math.abs(curSec - destIdx) <= 1)
+		if (Math.abs(curSection - destIdx) <= 1)
 			updateGrid();
 	}
 
 	function section_swapSides() {
-		for (note in _song.notes[curSec].sectionNotes)
+		for (note in _song.notes[curSection].sectionNotes)
 			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
 
 		updateGrid();
 	}
 	function section_duetNotes() {
-		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSec].sectionNotes) note.clone()];
+		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSection].sectionNotes) note.clone()];
 
 		for (note in copiedNotes) {
 			if (Math.floor(note.column / _song.keyCount) % 2 == 1)
@@ -1235,7 +1233,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			else
 				note.column += _song.keyCount;
 
-			_song.notes[curSec].sectionNotes.push(note);
+			_song.notes[curSection].sectionNotes.push(note);
 		}
 		
 		copiedNotes.resize(0);
@@ -1244,7 +1242,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		updateGrid();
 	}
 	function section_mirrorNotes() {
-		for (note in _song.notes[curSec].sectionNotes)
+		for (note in _song.notes[curSection].sectionNotes)
 		{
 			var boob:Int = note.column % _song.keyCount;
 			boob = _song.keyCount - 1 - boob;
@@ -1304,13 +1302,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		//
 		var x:Float = check_notesSec.x + 100;
 
-		var copyButton = newFlxUIButton(x, y, "Select current", () -> sectionToCopy = curSec);
+		var copyButton = newFlxUIButton(x, y, "Select current", () -> sectionToCopy = curSection);
 
-		var pasteButton = newFlxUIButton(x, y + 30, "Paste selected", () -> copySection(curSec, sectionToCopy, check_notesSec.checked, check_eventsSec.checked));
+		var pasteButton = newFlxUIButton(x, y + 30, "Paste selected", () -> copySection(curSection, sectionToCopy, check_notesSec.checked, check_eventsSec.checked));
 		pasteButton.color = FlxColor.ORANGE;
 		pasteButton.label.color = FlxColor.WHITE;
 
-		var clearSectionButton = newFlxUIButton(x, y + 60, "Clear current", () -> clearSection(curSec, check_notesSec.checked, check_eventsSec.checked));
+		var clearSectionButton = newFlxUIButton(x, y + 60, "Clear current", () -> clearSection(curSection, check_notesSec.checked, check_eventsSec.checked));
 		clearSectionButton.color = FlxColor.RED;
 		clearSectionButton.label.color = FlxColor.WHITE;
 
@@ -1324,11 +1322,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			var value:Int = Std.int(stepperCopy.value);
 			if (value == 0) return;
 
-			var copyIdx:Int = curSec - value;
+			var copyIdx:Int = curSection - value;
 			if (copyIdx < 0) return;
 
 			////
-			copySection(curSec, copyIdx, true, true);
+			copySection(curSection, copyIdx, true, true);
 		});
 		copyLastButton.resize(60, 30);
 		
@@ -2200,17 +2198,17 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			switch (name)
 			{
 				case 'check_mustHit':
-					new ChangeMustHitSectionAction(curSec, FlxG.keys.pressed.CONTROL);
+					new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
 
 					updateGrid();
 					updateHeads();
 				case 'check_gf':
-					_song.notes[curSec].gfSection = check.checked;
+					_song.notes[curSection].gfSection = check.checked;
 
 					updateGrid();
 					updateHeads();
 				case 'check_changeBPM':
-					_song.notes[curSec].changeBPM = check.checked;
+					_song.notes[curSection].changeBPM = check.checked;
 					
 					Conductor.mapBPMChanges(_song);
 					updateGrid();
@@ -2218,7 +2216,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					updateEventSteps();
 
 				case "check_altAnim":
-					_song.notes[curSec].altAnim = check.checked;
+					_song.notes[curSection].altAnim = check.checked;
 			}
 		}
 		else if (id == FlxUINumericStepper.CHANGE_EVENT)
@@ -2229,7 +2227,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					metroInterval = (60 / nums.value) * 1000;
 
 				case 'section_beats':
-					_song.notes[curSec].sectionBeats = nums.value;
+					_song.notes[curSection].sectionBeats = nums.value;
 					reloadGridLayer();
 					updateNoteSteps();
 					updateEventSteps();
@@ -2274,7 +2272,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					}
 
 				case 'section_bpm':
-					_song.notes[curSec].bpm = nums.value;
+					_song.notes[curSection].bpm = nums.value;
 					Conductor.mapBPMChanges(_song);
 					updateGrid();
 					updateNoteSteps();
@@ -2353,7 +2351,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	inline function sectionStartTime(add:Int = 0):Float
-		return getSectionStartTime(curSec + add);
+		return getSectionStartTime(curSection + add);
 
 	function getSnappedTime(snap:Float) {
 		var time = Conductor.songPosition;
@@ -2467,9 +2465,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 						&&	FlxG.mouse.y <	gridBG.y + gridBG.height;
 
 		if (onIcons && FlxG.mouse.justPressed) {
-			var mhs = _song.notes[curSec].mustHitSection;
+			var mhs = _song.notes[curSection].mustHitSection;
 			if (FlxG.mouse.overlaps(mhs ? rightIcon : leftIcon))
-				new ChangeMustHitSectionAction(curSec, FlxG.keys.pressed.CONTROL);
+				new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
 		}
 
 		if (onGrid){
@@ -2523,7 +2521,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 			}
 			if (!clickedNote && onGrid) {
-				var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSec) / 4), false);
+				var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
 				var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
 				(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
 			}
@@ -2595,10 +2593,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 			else if (Conductor.songPosition >= currentSectionEnd) {
 				while (Conductor.songPosition >= currentSectionEnd) {
-					var nextSection:Int = curSec + 1;
+					var nextSection:Int = curSection + 1;
 					if (_song.notes[nextSection] == null)
 						pushSection();
-					curSec = nextSection;
+					curSection = nextSection;
 					currentSectionEnd = sectionStartTime(1);
 				}
 				reloadGridLayer();
@@ -2609,7 +2607,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 			else if (Conductor.songPosition < currentSectionStart) {
 				while (Conductor.songPosition < currentSectionStart) {
-					curSec = curSec - 1;
+					curSection = curSection - 1;
 					currentSectionStart = sectionStartTime();
 				}
 				reloadGridLayer();
@@ -2635,7 +2633,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		"Time: " + FlxMath.roundDecimal(Conductor.songPosition / 1000, 2) + " / " + FlxMath.roundDecimal(songLength / 1000, 2) +
 		"\n" +
 		'\nBPM: ${Conductor.bpm}' + (Conductor.bpmChangeMap.length <= 1 ? '' : ' ($curBPMChangeIndex / ${Conductor.bpmChangeMap.length - 1})') +
-		'\nSection: $curSec' +
+		'\nSection: $curSection' +
 		"\nBeat: " + floorDecimal(curDecBeat, 2) +
 		'\nStep: $curStep';
 
@@ -2713,13 +2711,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				openSongSelect();
 			}
 			if (FlxG.keys.justPressed.M) {
-				new ChangeMustHitSectionAction(curSec, true);
+				new ChangeMustHitSectionAction(curSection, true);
 			}	
 			return;
 		}
 
 		if (FlxG.keys.justPressed.M) {
-			new ChangeMustHitSectionAction(curSec, false);
+			new ChangeMustHitSectionAction(curSection, false);
 		}	
 
 		if (curSelectedNote != null) {
@@ -2752,7 +2750,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			(Conductor.playing) ? pauseTracks() : resumeTracks();
 
 		if (FlxG.keys.justPressed.R)
-			changeSection(FlxG.keys.pressed.SHIFT ? 0 : curSec, true);
+			changeSection(FlxG.keys.pressed.SHIFT ? 0 : curSection, true);
 
 		if (FlxG.keys.pressed.W || FlxG.keys.pressed.S)
 		{
@@ -2845,7 +2843,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (FlxG.keys.pressed.SHIFT)
 			shiftThing = 4;
 
-		for (i in curSec ... curSec + shiftThing + 1) {
+		for (i in curSection ... curSection + shiftThing + 1) {
 			if (_song.notes[i] == null) {
 				if (getSectionStartTime(i) < inst.length)
 					insertSection(i);
@@ -2853,12 +2851,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		if (FlxG.keys.justPressed.A) {
-			var nextSection:Int = curSec - shiftThing;
+			var nextSection:Int = curSection - shiftThing;
 			if (nextSection < 0) nextSection += _song.notes.length;
 			changeSection(nextSection);
 		}
 		if (FlxG.keys.justPressed.D) {
-			var nextSection:Int = (curSec + shiftThing) % _song.notes.length;
+			var nextSection:Int = (curSection + shiftThing) % _song.notes.length;
 			changeSection(nextSection);
 		}
 		
@@ -2939,7 +2937,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		currentSectionEnd = sectionStartTime(1); 
 
 		// previous section grid
-		var previousSectionBeats = curSec > 0 ? getSectionBeats(curSec - 1) : 0;
+		var previousSectionBeats = curSection > 0 ? getSectionBeats(curSection - 1) : 0;
 		if (previousSectionBeats > 0) {
 			var gridHeight:Int = Math.floor(previousSectionBeats * 4 * zoomList[curZoom]); 
 			
@@ -2956,7 +2954,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		// current section grid
-		currentSectionBeats = getSectionBeats(curSec);
+		currentSectionBeats = getSectionBeats(curSection);
 		{
 			var gridHeight:Int = Math.floor(currentSectionBeats * 4 * zoomList[curZoom]); 
 			
@@ -2972,7 +2970,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 		
 		// next section grid
-		var nextSectionBeats = (currentSectionEnd > inst.length) ? 0 : (getSectionBeats(curSec + 1) ?? 0);
+		var nextSectionBeats = (currentSectionEnd > inst.length) ? 0 : (getSectionBeats(curSection + 1) ?? 0);
 		if (nextSectionBeats > 0 && currentSectionEnd <= inst.length) {
 			var gridHeight:Int = Math.floor(nextSectionBeats * 4 * zoomList[curZoom]); 
 			nextGridBG = FlxGridOverlay.create(1, 1, gridWidth, gridHeight, gridColor1, gridColor2);
@@ -3221,7 +3219,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function changeSection(sec:Int = 0, ?updateMusic:Bool = true):Void
 	{
 		if (_song.notes[sec] != null) {
-			curSec = sec;
+			curSection = sec;
 
 			if (updateMusic) {
 				pauseTracks();
@@ -3239,9 +3237,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateSectionUI():Void
 	{
-		var sec = _song.notes[curSec];
+		var sec = _song.notes[curSection];
 
-		stepperBeats.value = getSectionBeats(curSec);
+		stepperBeats.value = getSectionBeats(curSection);
 		check_mustHitSection.checked = sec.mustHitSection;
 		check_gfSection.checked = sec.gfSection;
 		check_altAnim.checked = sec.altAnim;
@@ -3256,11 +3254,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var healthIconP1:String ="bf";
 		var healthIconP2:String = "dad";
 
-		var focusIcon = (_song.notes[curSec].mustHitSection ? leftIcon : rightIcon);
+		var focusIcon = (_song.notes[curSection].mustHitSection ? leftIcon : rightIcon);
 
 		leftIcon.changeIcon(healthIconP1);
 		rightIcon.changeIcon(healthIconP2);
-		if (_song.notes[curSec].gfSection) focusIcon.changeIcon('gf');
+		if (_song.notes[curSection].gfSection) focusIcon.changeIcon('gf');
 
 		leftIcon.setGraphicSize(0, 45);
 		leftIcon.updateHitbox();
@@ -3382,7 +3380,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		// get last bpm
 		var daBPM:Float = _song.bpm;
 		curBPMChangeIndex = 0;
-		for (i in 0...curSec + 1) {
+		for (i in 0...curSection + 1) {
 			if (_song.notes[i].changeBPM) {
 				daBPM = _song.notes[i].bpm;
 				curBPMChangeIndex++;
@@ -3390,14 +3388,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		if (Conductor.bpm != daBPM) {
-			Conductor.changeBPM(daBPM);
+			Conductor.bpm = (daBPM);
 			metronomeStepper.value = daBPM;
 			metroInterval = (60 / daBPM) * 1000;
 		}
 
 		// PREV SECTION
-		if(curSec > 0) {
-			var prevSection = curSec-1;
+		if(curSection > 0) {
+			var prevSection = curSection-1;
 			for (i in _song.notes[prevSection].sectionNotes)
 			{
 				var note:Note = setupNoteData(i, prevSection);
@@ -3411,9 +3409,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		// CURRENT SECTION
-		for (i in _song.notes[curSec].sectionNotes)
+		for (i in _song.notes[curSection].sectionNotes)
 		{
-			var note:Note = setupNoteData(i, curSec);
+			var note:Note = setupNoteData(i, curSection);
 			curRenderedNotes.add(note);
 			if (note.sustainLength > 0)
 			{
@@ -3446,7 +3444,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			var t = fuckFloatingPoints(i.strumTime);
 			if (startThing <= t && t < endThing)
 			{
-				var note:Note = setupEventData(i, curSec);
+				var note:Note = setupEventData(i, curSection);
 				curRenderedNotes.add(note);
 
 				var text:String = 'Event: ' + note.eventName + ' (' + Math.floor(note.strumTime) + ' ms)' + '\nValue 1: ' + note.eventVal1 + '\nValue 2: ' + note.eventVal2;
@@ -3465,8 +3463,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		// NEXT SECTION
-		var nextSection = curSec+1;
-		if (curSec < _song.notes.length-1) {
+		var nextSection = curSection+1;
+		if (curSection < _song.notes.length-1) {
 			for (i in _song.notes[nextSection].sectionNotes)
 			{
 				var note:Note = setupNoteData(i, nextSection);
@@ -3534,7 +3532,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	inline function getNoteY(strumTime:Float, sectionNumber:Int):Float
-		return getYfromStrumNotes(calcY(strumTime) - getSectionStartTime(curSec), getSectionBeats(sectionNumber));
+		return getYfromStrumNotes(calcY(strumTime) - getSectionStartTime(curSection), getSectionBeats(sectionNumber));
 
 	public static function calcY(strumTime:Float = 0) {
         var map:BPMChangeEvent;
@@ -3671,10 +3669,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	{
 		if (note.column > -1) {
 			//Normal Notes
-			var currentSection = _song.notes[curSec];
+			var currentSection = _song.notes[curSection];
 			for (i in currentSection.sectionNotes) {
 				if (i != note.chartData) continue;
-				new RemoveNoteAction(curSec, i);
+				new RemoveNoteAction(curSection, i);
 				break;
 			}
 		}else {
@@ -3698,21 +3696,21 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			default: null;
 		}
 
-		var noteData = _addNote(curSec, strumTime, column, noteType);
+		var noteData = _addNote(curSection, strumTime, column, noteType);
 		if (heldNotes != null) heldNotes[column] = noteData;
 
 		if (FlxG.keys.pressed.CONTROL) {
 			var mirrorColumn:Int = (column + _song.keyCount) % (_song.keyCount * 2);
-			var noteData = _addNote(curSec, strumTime, mirrorColumn, noteType);
+			var noteData = _addNote(curSection, strumTime, mirrorColumn, noteType);
 			if (heldNotes != null) heldNotes[mirrorColumn] = noteData;
 		}
 
-		//trace(noteData + ', ' + strumTime + ', ' + curSec);
+		//trace(noteData + ', ' + strumTime + ', ' + curSection);
 	}
 
 	private function _addNote(sectionNumber:Int, strumTime:Float, column:Int, noteType:String) {
 		var note = NoteData.fromValues(strumTime, column, 0.0, noteType);
-		new AddNoteAction(curSec, note);
+		new AddNoteAction(curSection, note);
 		return note;
 	}
 
@@ -3889,7 +3887,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		saveOptions();
 		
 		if (_session != null) {
-			_session.curSec = curSec;
+			_session.curSection = curSection;
 			_session.songPosition = Conductor.songPosition;
 			_session.trackVolumes.clear();
 			for (id => snd in soundTracksMap) {

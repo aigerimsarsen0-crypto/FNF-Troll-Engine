@@ -2394,7 +2394,7 @@ class PlayState extends MusicBeatState
 			}
 			else if (Conductor.songPosition >= 0)
 			{
-				updateSongPosition();
+				updateSongPosition(inst);
 			}
 
 			if (Conductor.songPosition >= songLength) {
@@ -2443,7 +2443,7 @@ class PlayState extends MusicBeatState
 
 		if (FlxG.keys.pressed.SHIFT) {
 			var _chartEditor:ChartingStateSession = (SONG:Dynamic)._chartEditor ??= ChartingState.makeSession();
-			_chartEditor.curSec = curSection;
+			_chartEditor.curSection = curSection;
 			_chartEditor.songPosition = Conductor.songPosition;
 		}
 		MusicBeatState.switchState(new ChartingState(SONG));
@@ -3611,7 +3611,6 @@ class PlayState extends MusicBeatState
 		callOnScripts('onBeatHit');
 	}
 
-	var lastSection:Int = -1;
 	override function sectionHit(){
 		var sectionData = SONG.notes[curSection];
 		if (sectionData == null)
@@ -3631,10 +3630,7 @@ class PlayState extends MusicBeatState
 		setOnScripts("curSection", curSection);
 		setOnScripts('sectionData', sectionData);
 
-		if (lastSection != curSection) {
-			callOnScripts("onSectionHit");
-			lastSection = curSection;
-		}
+		callOnScripts("onSectionHit");
 
 		if (generatedMusic && !endingSong)
 			moveCameraSection(sectionData);
