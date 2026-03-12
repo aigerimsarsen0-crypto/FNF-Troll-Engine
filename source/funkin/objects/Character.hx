@@ -149,9 +149,6 @@ class Character extends FlxSprite
 
 	/**BLAMMED LIGHTS!! idk not used anymore**/
 	public var colorTween:FlxTween;
-	
-	/** Whether the Character is using texture Atlas or not*/
-	public var isAtlas:Bool = false;
 
 	//Used on Character Editor
 	public var animationsArray:Array<AnimArray> = [];
@@ -192,8 +189,8 @@ class Character extends FlxSprite
 	#end
 
 	#if !USING_FLXANIMATE
-	public var anim(get, never):flixel.animation.FlxAnimationController;
-	@:noCompletion function get_anim() return this.animation;
+	@:noCompletion public var isAnimate(get, never):Bool;
+	@:noCompletion inline function get_anim() return false;
 	#end
 
 	override function destroy()
@@ -222,7 +219,7 @@ class Character extends FlxSprite
 		{
 			case "texture":	
 				frames = Paths.getTextureAtlas(imageFile);
-				isAtlas = true;
+				isAnimate = true;
 			case "packer":	frames = Paths.getPackerAtlas(imageFile);
 			case "sparrow":	
 				var frames:FlxAtlasFrames = Paths.getSparrowAtlas(imageFile);
@@ -296,7 +293,7 @@ class Character extends FlxSprite
 				}
 
 				////
-				if (!isAtlas) {
+				if (!isAnimate) {
 					if (animIndices != null && animIndices.length > 0)
 						animation.addByIndices(animAnim, animName, animIndices, "", animFps, animLoop);
 					else
@@ -667,7 +664,7 @@ class Character extends FlxSprite
 
 	public function quickAnimAdd(name:String, animToAdd:String)
 	{
-		if (!isAtlas)
+		if (!isAnimate)
 			animation.addByPrefix(name, animToAdd, 24, false);
 		#if USING_FLXANIMATE
 		else 
