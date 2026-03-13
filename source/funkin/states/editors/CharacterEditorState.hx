@@ -23,7 +23,6 @@ import flixel.text.FlxText;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import haxe.Json;
-import lime.system.Clipboard;
 
 using StringTools;
 
@@ -137,7 +136,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 	var ghostChar:Null<Character>;
 	var bgLayer:FlxTypedGroup<FlxSprite>;
 	var charLayer:FlxTypedGroup<Character>;
-	var dumbTexts:FlxTypedGroup<FlxText>;
+	var animTexts:FlxTypedGroup<FlxText>;
 	// var animList:Array<String> = [];
 	var curAnim:Int = 0;
 	var charName:String = 'pico';
@@ -156,7 +155,6 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 	private var camHUD:FlxCamera;
 	private var camMenu:FlxCamera;
 
-	var changeBGbutton:FlxButton;
 	var testModeButton:FlxButton;
 	var leHealthIcon:HealthIcon;
 	var characterList:Array<String> = [];
@@ -170,6 +168,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		// FlxG.sound.playMusic(Paths.music('breakfast'), 0.5);
 
 		camEditor = new FlxCamera();
+		camEditor.bgColor = 0xFF999999;
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
 		camMenu = new FlxCamera();
@@ -212,15 +211,9 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		});
 		testModeButton.cameras = [camMenu];
 
-		changeBGbutton = new FlxButton(FlxG.width - 360, 55, "BG: BLACK", function() {
-			changeBGbutton.text = (onPixelBG = !onPixelBG) ? "BG: BLACK" : "BG: WHITE";
-			reloadBGs();
-		});
-		changeBGbutton.cameras = [camMenu];
-
-		dumbTexts = new FlxTypedGroup<FlxText>();
-		add(dumbTexts);
-		dumbTexts.cameras = [camHUD];
+		animTexts = new FlxTypedGroup<FlxText>();
+		animTexts.camera = camHUD;
+		add(animTexts);
 
 		var healthbarGraphic = Paths.image('healthBar');
 		if (healthbarGraphic == null)
@@ -228,22 +221,15 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 
 		healthBarBG = new FlxSprite(30, FlxG.height - 75, healthbarGraphic);
 		healthBarBG.scrollFactor.set();
+		healthBarBG.camera = camHUD;
 		add(healthBarBG);
-		healthBarBG.cameras = [camHUD];
 
 		leHealthIcon = new HealthIcon();
 		leHealthIcon.y = FlxG.height - 150;
+		leHealthIcon.camera = camHUD;
 		add(leHealthIcon);
-		leHealthIcon.cameras = [camHUD];
 
-		var height = FlxG.height;
-		var greenHill = new FlxSprite(-height * 0.5 + 220, -height + 718);
-		greenHill.makeGraphic(height, height);
-		// bgLayer.add(greenHill);
-
-		camFollow = new FlxObject(0, 0, 2, 2);
-		var mid = greenHill.getMidpoint();
-		camFollow.setPosition(mid.x, mid.y);
+		camFollow = new FlxObject();
 		add(camFollow);
 		FlxG.camera.follow(camFollow);
 
@@ -296,7 +282,6 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		add(UI_characterbox);
 		add(UI_box);
 		add(testModeButton);
-		add(changeBGbutton);
 
 		// addOffsetsUI();
 		addSettingsUI();
@@ -325,11 +310,6 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 	}
 
 	var testMode:Bool = false;
-	var onPixelBG:Bool = false;
-
-	function reloadBGs() {
-		FlxG.camera.bgColor = onPixelBG ? FlxColor.BLACK : FlxColor.WHITE;
-	}
 
 	var charDropDown:FlxUIDropDownMenu;
 
@@ -344,7 +324,6 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			char.flipX = !char.flipX;
 			char.xFacing = char.isPlayer ? -1 : 1;
 			updatePointerPos();
-			reloadBGs();
 		};
 
 		charDropDown = new FlxUIDropDownMenu(10, 30, FlxUIDropDownMenu.makeStrIdLabelArray([''], true), function(character:String) {
@@ -397,7 +376,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			reloadCharacterOptions();
 			resetHealthBarColor();
 			updatePointerPos();
-			genBoyOffsets();
+			updateAnimList();
 		});
 		templateCharacter.color = FlxColor.RED;
 		templateCharacter.label.color = FlxColor.WHITE;
@@ -436,7 +415,9 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		tab_group.name = "Character";
 
 		imageInputText = new FlxUIInputText(15, 30, 200, 'characters/BOYFRIEND', 8);
-		var reloadImage:FlxButton = new FlxButton(imageInputText.x + 210, imageInputText.y - 3, "Reload Image", function() {
+		imageInputText.name = "char_imageFile";
+
+		var reloadImage = new FlxButton(imageInputText.x + 210, imageInputText.y - 3, "Reload Image", function() {
 
 			inline function _reloadImage(char:Character){
 				char.imageFile = imageInputText.text;
@@ -447,20 +428,17 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			}
 
 			_reloadImage(char);
-			if(ghostMirrorsCharacter){
+			if (ghostMirrorsCharacter)
 				_reloadImage(ghostChar);
-			}
 		});
 
-		var decideIconColor:FlxButton = new FlxButton(reloadImage.x, reloadImage.y + 30, "Get Icon Color", function() {
+		var decideIconColor = new FlxButton(reloadImage.x, reloadImage.y + 30, "Get Icon Color", function() {
 			try {
-				var coolColor = FlxColor.fromInt(CoolUtil.dominantColor(leHealthIcon));
-				healthColorStepperR.value = coolColor.red;
-				healthColorStepperG.value = coolColor.green;
-				healthColorStepperB.value = coolColor.blue;
-				getEvent(FlxUINumericStepper.CHANGE_EVENT, healthColorStepperR, null);
-				getEvent(FlxUINumericStepper.CHANGE_EVENT, healthColorStepperG, null);
-				getEvent(FlxUINumericStepper.CHANGE_EVENT, healthColorStepperB, null);
+				var coolColor = CoolUtil.dominantColor(leHealthIcon);
+				char.healthColorArray[0] = coolColor.red;
+				char.healthColorArray[1] = coolColor.green;
+				char.healthColorArray[2] = coolColor.blue;
+				resetHealthBarColor();
 			} catch (e) {
 				if (Main.showDebugTraces) {
 					trace(e.details());
@@ -469,15 +447,16 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		});
 
 		healthIconInputText = new FlxUIInputText(15, imageInputText.y + 35, 75, leHealthIcon.getCharacter(), 8);
-
+		healthIconInputText.name = 'char_healthIcon';
+		
 		singDurationStepper = new CustomFlxUINumericStepper(15, healthIconInputText.y + 45, 0.1, 4, 0, 999, 1);
+		singDurationStepper.name = 'char_singDuration';
 
 		scaleStepper = new CustomFlxUINumericStepper(15, singDurationStepper.y + 40, 0.1, 1, 0.05, 10, 1);
+		scaleStepper.name = "char_scale";
 
 		flipXCheckBox = new FlxUICheckBox(singDurationStepper.x + 80, singDurationStepper.y, null, null, "Flip X", 50);
-		flipXCheckBox.checked = char.flipX;
-		if (char.isPlayer)
-			flipXCheckBox.checked = !flipXCheckBox.checked;
+		flipXCheckBox.checked = char.isPlayer ? !char.flipX : char.flipX;
 		flipXCheckBox.callback = function() {
 			char.originalFlipX = !char.originalFlipX;
 			char.flipX = char.originalFlipX;
@@ -486,23 +465,31 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		};
 
 		noAntialiasingCheckBox = new FlxUICheckBox(flipXCheckBox.x, flipXCheckBox.y + 40, null, null, "No Antialiasing", 80);
+		noAntialiasingCheckBox.name = 'char_noAntialiasing';
 		noAntialiasingCheckBox.checked = char.noAntialiasing;
-		noAntialiasingCheckBox.callback = function() {
-			char.antialiasing = !noAntialiasingCheckBox.checked;
-			char.noAntialiasing = noAntialiasingCheckBox.checked;
-		};
 
 		positionXStepper = new CustomFlxUINumericStepper(flipXCheckBox.x + 110, flipXCheckBox.y, 10, char.positionArray[0], -9000, 9000, 0);
+		positionXStepper.name = "char_position_x";
+
 		positionYStepper = new CustomFlxUINumericStepper(positionXStepper.x + 60, positionXStepper.y, 10, char.positionArray[1], -9000, 9000, 0);
+		positionYStepper.name = "char_position_y";
 
 		positionCameraXStepper = new CustomFlxUINumericStepper(positionXStepper.x, positionXStepper.y + 40, 10, char.cameraPosition[0], -9000, 9000, 0);
-		positionCameraYStepper = new CustomFlxUINumericStepper(positionYStepper.x, positionYStepper.y + 40, 10, char.cameraPosition[1], -9000, 9000, 0);
+		positionCameraXStepper.name = 'char_cameraPosition_x';
 
-		var saveCharacterButton:FlxButton = new FlxButton(reloadImage.x, noAntialiasingCheckBox.y + 40, "Save Character", saveCharacter);
+		positionCameraYStepper = new CustomFlxUINumericStepper(positionYStepper.x, positionYStepper.y + 40, 10, char.cameraPosition[1], -9000, 9000, 0);
+		positionCameraYStepper.name = 'char_cameraPosition_y';
+
+		var saveCharacterButton = new FlxButton(reloadImage.x, noAntialiasingCheckBox.y + 40, "Save Character", saveCharacter);
 
 		healthColorStepperR = new CustomFlxUINumericStepper(singDurationStepper.x, saveCharacterButton.y, 20, char.healthColorArray[0], 0, 255, 0);
+		healthColorStepperR.name = 'char_healthColor_r';
+
 		healthColorStepperG = new CustomFlxUINumericStepper(singDurationStepper.x + 65, saveCharacterButton.y, 20, char.healthColorArray[1], 0, 255, 0);
+		healthColorStepperG.name = 'char_healthColor_g';
+
 		healthColorStepperB = new CustomFlxUINumericStepper(singDurationStepper.x + 130, saveCharacterButton.y, 20, char.healthColorArray[2], 0, 255, 0);
+		healthColorStepperB.name = 'char_healthColor_b';
 
 		tab_group.add(new FlxText(15, imageInputText.y - 18, 0, 'Image file name:'));
 		tab_group.add(new FlxText(15, healthIconInputText.y - 18, 0, 'Health icon name:'));
@@ -550,7 +537,10 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		animationLoopCheckBox = new FlxUICheckBox(animationNameInputText.x + 170, animationNameInputText.y - 1, null, null, "Should it Loop?", 100);
 
 		animationXCam = new CustomFlxUINumericStepper(animationNameFramerate.x + 75, animationNameFramerate.y, 10, 0, -9000, 9000, 0);
+		animationXCam.name = 'animation_cam_x';
+		
 		animationYCam = new CustomFlxUINumericStepper(animationXCam.x + 75, animationXCam.y, 10, 0, -9000, 9000, 0);
+		animationYCam.name = 'animation_cam_y';
 
 		animationDropDown = new FlxUIDropDownMenu(15, animationInputText.y - 55, FlxUIDropDownMenu.makeStrIdLabelArray([''], true), function(pressed:String) {
 			var selectedAnimation:Int = Std.parseInt(pressed);
@@ -638,7 +628,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			}
 
 			reloadAnimationDropDown();
-			genBoyOffsets();
+			updateAnimList();
 			trace('Added/Updated animation: ' + animationInputText.text);
 		});
 
@@ -663,7 +653,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 							char.playAnim(char.animationsArray[0].anim, true);
 
 						reloadAnimationDropDown();
-						genBoyOffsets();
+						updateAnimList();
 						trace('Removed animation: ' + animationInputText.text);
 						break;
 					}
@@ -885,74 +875,90 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 	}
 
 	override function getEvent(id:String, sender:Dynamic, data:Dynamic, ?params:Array<Dynamic>) {
-		if (id == FlxUIInputText.CHANGE_EVENT && (sender is FlxUIInputText)) {
-			if (sender == healthIconInputText) {
-				leHealthIcon.changeIcon(healthIconInputText.text);
-				char.healthIcon = healthIconInputText.text;
-				updateDiscordPresence();
-			} else if (sender == imageInputText) {
-				char.imageFile = imageInputText.text;
+		if (id == FlxUIInputText.CHANGE_EVENT)
+		{
+			var sender:FlxUIInputText = cast sender;
+			switch (sender.name) {
+				case 'char_healthIcon':
+					leHealthIcon.changeIcon(sender.text);
+					char.healthIcon = sender.text;
+					updateDiscordPresence();
+				case 'char_imageFile':
+					char.imageFile = sender.text;
 			}
-		} else if (id == FlxUINumericStepper.CHANGE_EVENT && (sender is FlxUINumericStepper)) {
-			if (sender == scaleStepper) {
-				char.baseScale = sender.value;
-				char.scale.set(sender.value, sender.value);
-
-				if (ghostMirrorsCharacter) {
-					ghostChar.baseScale = sender.value;
-					ghostChar.scale.set(sender.value, sender.value);
-					if (ghostChar.animation.curAnim != null) {
-						ghostChar.playAnim(ghostChar.animation.curAnim.name, true);
-					} else {
-						ghostChar.updateHitbox();
+		}
+		else if (id == FlxUICheckBox.CLICK_EVENT)
+		{
+			var sender:FlxUICheckBox = cast sender;
+			switch (sender.name) {
+				case 'char_noAntialiasing':
+					char.antialiasing = !sender.checked;
+					char.noAntialiasing = sender.checked;
+			}
+		}
+		else if (id == FlxUINumericStepper.CHANGE_EVENT)
+		{
+			var sender:FlxUINumericStepper = cast sender;
+			switch (sender.name) {
+				case 'char_scale':
+					char.baseScale = sender.value;
+					char.scale.set(sender.value, sender.value);
+	
+					if (ghostMirrorsCharacter) {
+						ghostChar.baseScale = sender.value;
+						ghostChar.scale.set(sender.value, sender.value);
+						if (ghostChar.animation.curAnim != null) {
+							ghostChar.playAnim(ghostChar.animation.curAnim.name, true);
+						} else {
+							ghostChar.updateHitbox();
+						}
 					}
-				}
+	
+					updatePointerPos();
+	
+					if (char.animation.curAnim != null) {
+						char.playAnim(char.animation.curAnim.name, true);
+					} else {
+						char.updateHitbox();
+					}
+				
+				case 'char_position_x':
+					char.positionArray[0] = sender.value;
+					char.x = char.positionArray[0];
+					updatePointerPos();
+				case 'char_position_y':
+					char.positionArray[1] = sender.value;
+					char.y = char.positionArray[1];
+					updatePointerPos();
+				
+				case 'char_cameraPosition_x':
+					char.cameraPosition[0] = sender.value;
+					updatePointerPos();
+				case 'char_cameraPosition_y':
+					char.cameraPosition[1] = sender.value;
+					updatePointerPos();
+				
+				case 'animation_cam_x' | 'animation_cam_y':
+					updatePointerPos();
 
-				updatePointerPos();
+				case 'char_singDuration':
+					char.singDuration = sender.value; // ermm you forgot this??
 
-				if (char.animation.curAnim != null) {
-					char.playAnim(char.animation.curAnim.name, true);
-				} else {
-					char.updateHitbox();
-				}
-			} else if (sender == positionXStepper) {
-				char.positionArray[0] = positionXStepper.value;
-				char.x = char.positionArray[0];
-				updatePointerPos();
-			} else if (sender == animationXCam || sender == animationYCam) {
-				updatePointerPos();
-			} else if (sender == singDurationStepper) {
-				char.singDuration = singDurationStepper.value; // ermm you forgot this??
-			} else if (sender == positionYStepper) {
-				char.positionArray[1] = positionYStepper.value;
-				char.y = char.positionArray[1];
-				updatePointerPos();
-			} else if (sender == positionCameraXStepper) {
-				char.cameraPosition[0] = positionCameraXStepper.value;
-				updatePointerPos();
-			} else if (sender == positionCameraYStepper) {
-				char.cameraPosition[1] = positionCameraYStepper.value;
-				updatePointerPos();
-			} else if (sender == healthColorStepperR) {
-				char.healthColorArray[0] = Math.round(healthColorStepperR.value);
-				healthBarBG.color = FlxColor.fromRGB(char.healthColorArray[0], char.healthColorArray[1], char.healthColorArray[2]);
-			} else if (sender == healthColorStepperG) {
-				char.healthColorArray[1] = Math.round(healthColorStepperG.value);
-				healthBarBG.color = FlxColor.fromRGB(char.healthColorArray[0], char.healthColorArray[1], char.healthColorArray[2]);
-			} else if (sender == healthColorStepperB) {
-				char.healthColorArray[2] = Math.round(healthColorStepperB.value);
-				healthBarBG.color = FlxColor.fromRGB(char.healthColorArray[0], char.healthColorArray[1], char.healthColorArray[2]);
+				case 'char_healthColor_r':
+					char.healthColorArray[0] = Math.round(sender.value);
+					updateHealthBarColor();
+				case 'char_healthColor_g':
+					char.healthColorArray[1] = Math.round(sender.value);
+					updateHealthBarColor();
+				case 'char_healthColor_b':
+					char.healthColorArray[2] = Math.round(sender.value);
+					updateHealthBarColor();
 			}
 		}
 	}
 
 	function reloadCharacterImage(char:Character) {
-		var lastAnim:String = '';
-
-		if (char.animation.curAnim != null)
-			lastAnim = char.animation.curAnim.name;
-
-		// var anims:Array<AnimArray> = char.animationsArray.copy();
+		var lastAnim = char.animation.name;
 
 		try {
 			Paths.removeBitmap(char.frames.parent.key); // is null SOMETIMES idk WHY
@@ -972,42 +978,46 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 
 		if (char.animationsArray != null && char.animationsArray.length > 0) {
 			for (anim in char.animationsArray) {
-				var animAnim:String = '' + anim.anim;
-				var animName:String = '' + anim.name;
-				var animFps:Int = anim.fps;
-				var animLoop:Bool = !!anim.loop; // Bruh
-				var animIndices:Array<Int> = anim.indices;
-				if (animIndices != null && animIndices.length > 0) {
-					char.animation.addByIndices(animAnim, animName, animIndices, "", animFps, animLoop);
-				} else {
-					char.animation.addByPrefix(animAnim, animName, animFps, animLoop);
-				}
+				var name:String = '' + anim.anim;
+				var prefix:String = '' + anim.name;
+				var framerate:Int = anim.fps;
+				var looped:Bool = !!anim.loop; // Bruh
+				var indices:Array<Int> = anim.indices;
+
+				if (indices != null && indices.length > 0)
+					char.animation.addByIndices(name, prefix, indices, "", framerate, looped);
+				else
+					char.animation.addByPrefix(name, prefix, framerate, looped);
 			}
 		} else {
 			char.quickAnimAdd('idle', 'BF idle dance');
 		}
 
-		if (lastAnim != '') {
+		if (lastAnim != null && char.animation.exists(lastAnim)) {
 			char.playAnim(lastAnim, true);
 		} else {
 			char.dance();
 		}
+
 		ghostAnimDropDown.selectedLabel = '';
 	}
 
-	function genBoyOffsets():Void {
-		dumbTexts.killMembers();
+	function updateAnimList():Void {
+		animTexts.killMembers();
+
+		inline function makeText(i:Int, label:String, color:FlxColor = 0xFFFFFFFF) {
+			var text:FlxText = animTexts.recycle(FlxText, () -> return new FlxText());
+			text.text = label;
+			text.setPosition(10, 20 + (18 * i));
+			text.setFormat(null, 16, color, CENTER);
+			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
+			text.scrollFactor.set();
+			animTexts.add(text);
+			return text;
+		}
 
 		if (char.animationsArray.length < 1) {
-			var text:FlxText = dumbTexts.recycle(FlxText, () -> return new FlxText());
-			text.text = 'NO ANIMATIONS AVAILABLE.';
-			text.setPosition(10, 20);
-			text.setFormat(null, 16, 0xFFFF0000, CENTER);
-			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-			text.scrollFactor.set();
-			text.cameras = [camHUD];
-			dumbTexts.add(text);
-
+			makeText(0, 'NO ANIMATIONS AVAILABLE.', 0xFFFF0000);
 			return;
 		}
 
@@ -1017,14 +1027,10 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			var offsets = char.animOffsets.get(name);
 			var isSelected = i == curAnim;
 
-			var text:FlxText = dumbTexts.recycle(FlxText, () -> return new FlxText());
-			text.text = (isSelected ? '> ' : '') + '$name: $offsets';
-			text.setPosition(isSelected ? 16 : 10, 20 + (18 * i));
-			text.setFormat(null, 16, isSelected ? 0xFF00FF00 : 0xFFFFFFFF, CENTER);
-			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
-			text.scrollFactor.set();
-			text.cameras = [camHUD];
-			dumbTexts.add(text);
+			if (isSelected)
+				makeText(i, '> $name: $offsets', 0xFF00FF00).x += 6;
+			else
+				makeText(i, '$name: $offsets',0xFFFFFFFF);
 		}
 	}
 
@@ -1044,9 +1050,8 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		char.setPosition(char.positionArray[0], char.positionArray[1]);
 		charLayer.add(char);
 
-		genBoyOffsets();
+		updateAnimList();
 		reloadCharacterOptions();
-		reloadBGs();
 		updatePointerPos();
 
 		if (ghostMirrorsCharacter) {
@@ -1135,7 +1140,15 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		healthColorStepperR.value = char.healthColorArray[0];
 		healthColorStepperG.value = char.healthColorArray[1];
 		healthColorStepperB.value = char.healthColorArray[2];
-		healthBarBG.color = FlxColor.fromRGB(char.healthColorArray[0], char.healthColorArray[1], char.healthColorArray[2]);
+		updateHealthBarColor();
+	}
+
+	function updateHealthBarColor() {
+		healthBarBG.color = FlxColor.fromRGB(
+			char.healthColorArray[0], 
+			char.healthColorArray[1], 
+			char.healthColorArray[2]
+		);
 	}
 
 	function changeCurOffset(x:Int, y:Int, isAbs:Bool = false) {
@@ -1159,7 +1172,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 			}
 		}
 
-		genBoyOffsets();
+		updateAnimList();
 	}
 
 	function updateDiscordPresence() {
@@ -1197,14 +1210,6 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		];
 		for (i in 0...inputTexts.length) {
 			if (inputTexts[i].hasFocus) {
-				if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.V && Clipboard.text != null) { // Copy paste
-					inputTexts[i].text = ClipboardAdd(inputTexts[i].text);
-					inputTexts[i].caretIndex = inputTexts[i].text.length;
-					getEvent(FlxUIInputText.CHANGE_EVENT, inputTexts[i], null, []);
-				}
-				if (FlxG.keys.justPressed.ENTER) {
-					inputTexts[i].hasFocus = false;
-				}
 				FNFGame.specialKeysEnabled = false;
 				super.update(elapsed);
 				return;
@@ -1300,7 +1305,7 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 
 				if (replayAnim) {
 					char.playAnim(char.animationsArray[curAnim].anim, true);
-					genBoyOffsets();
+					updateAnimList();
 				}
 
 				var multiplier:Int = FlxG.keys.pressed.SHIFT ? 10 : 1;
@@ -1357,15 +1362,5 @@ class CharacterEditorState extends funkin.states.base.CustomFlxUIState {
 		if (data.length > 0) {
 			CoolUtil.showSaveDialog(data, "Save Character", '$charName.json', ["JSON file", "*.json"], onSaveComplete, onSaveCancel);
 		}
-	}
-
-	function ClipboardAdd(prefix:String = ''):String {
-		if (prefix.toLowerCase().endsWith('v')) // probably copy paste attempt
-		{
-			prefix = prefix.substring(0, prefix.length - 1);
-		}
-
-		var text:String = prefix + Clipboard.text.replace('\n', '');
-		return text;
 	}
 }

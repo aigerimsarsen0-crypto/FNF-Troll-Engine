@@ -120,13 +120,14 @@ class HealthIcon extends FlxSprite
 	}
 
 	public function changeIcon(char:String) {
-		var file:Null<FlxGraphic> = Paths.image('icons/$char', null, !(FlxG.state is ChartingState)); 
+		var allowGPU:Bool = !(FlxG.state is ChartingState)
+		var file:Null<FlxGraphic> = Paths.image('icons/$char', null, allowGPU); 
 
-		if(file == null)
-			file = Paths.image('icons/icon-$char', null, !(FlxG.state is ChartingState)); // base game compat
-		
-		if(file == null) 
-			file = Paths.image('icons/face', null, !(FlxG.state is ChartingState)); // Prevents crash from missing icon
+		if (file == null)
+			file = Paths.image('icons/icon-$char', null, allowGPU); // base game compat
+
+		if (file == null)
+			file = Paths.image('icons/face', null, allowGPU); // Prevents crash from missing icon
 
 		if (file != null){
 			//// TODO: sparrow atlas icons? would make the implementation of extra behaviour (ex: winning icons) way easier
