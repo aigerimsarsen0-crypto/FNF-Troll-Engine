@@ -120,7 +120,7 @@ class HealthIcon extends FlxSprite
 	}
 
 	public function changeIcon(char:String) {
-		var allowGPU:Bool = !(FlxG.state is ChartingState)
+		var allowGPU:Bool = !(FlxG.state is ChartingState);
 		var file:Null<FlxGraphic> = Paths.image('icons/$char', null, allowGPU); 
 
 		if (file == null)
