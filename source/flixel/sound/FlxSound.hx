@@ -41,8 +41,6 @@ import openfl.utils.AssetType;
  */
 class FlxSound extends FlxBasic
 {
-	public static var defaultPitch:Float = 1;
-	
 	var effectAux:ALAuxiliaryEffectSlot = AL.createAux(); // TODO: add removeAux
 
 	/**
@@ -215,7 +213,7 @@ class FlxSound extends FlxBasic
 	/**
 	 * Internal tracker for pitch.
 	 */
-	var _pitch:Float = defaultPitch;
+	var _pitch:Float = 1.0;
 	#end
 
 	/**
@@ -282,7 +280,7 @@ class FlxSound extends FlxBasic
 			_transform = new SoundTransform();
 		_transform.pan = 0;
 
-		_pitch = defaultPitch;
+		_pitch = 1;
 		effect = null;
 	}
 
@@ -481,7 +479,7 @@ class FlxSound extends FlxBasic
 		exists = true;
 		onComplete = OnComplete;
 		#if FLX_PITCH
-		pitch = defaultPitch;
+		pitch = 1;
 		#end
 		_length = (_sound == null) ? 0 : _sound.length;
 		endTime = _length;
