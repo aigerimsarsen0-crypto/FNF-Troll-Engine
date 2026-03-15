@@ -45,6 +45,11 @@
 			"url": "https://github.com/troll-slaiyers/t-hscript"
 		},
 		{
+			"name": "no-spoon",
+			"type": "haxelib",
+			"version": "0.2.0"
+		},
+		{
 			"name": "hxvlc",
 			"type": "haxelib",
 			"version": "2.2.5"

@@ -137,6 +137,9 @@
 	<haxelib name="linc_filedialogs" if="desktop cpp" />
 
 	<haxelib name="hxdr_libs" if="cpp false"/>
+
+	<haxelib name="no-spoon" />	
+	<haxeflag name="--macro" value="Spork.stuff()" />
 		
 	<!-- ______________________________ Haxedefines _____________________________ -->
 

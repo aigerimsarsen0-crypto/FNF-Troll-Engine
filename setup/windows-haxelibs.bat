@@ -12,6 +12,7 @@ haxelib --always --quiet install flixel-ui 2.6.1
 haxelib --always --quiet install flixel-addons 3.2.3
 haxelib --always --quiet git hxcpp https://github.com/moxie-coder/hxcpp-funkin
 haxelib --always --quiet git hscript https://github.com/troll-slaiyers/t-hscript
+haxelib --always --quiet install no-spoon 0.2.0
 haxelib --always --quiet  --skip-dependencies install hxvlc 2.1.4
 haxelib --always --quiet install hxdiscord_rpc 1.1.1
 haxelib --always --quiet install moonchart 0.5.1
