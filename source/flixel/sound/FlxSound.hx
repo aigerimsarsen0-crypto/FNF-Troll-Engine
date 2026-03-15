@@ -265,7 +265,6 @@ class FlxSound extends FlxBasic
 		_time = 0;
 		_paused = false;
 		_volume = 1.0;
-		_pitch = defaultPitch;
 		_volumeAdjust = 1.0;
 		looped = false;
 		loopTime = 0.0;
@@ -278,11 +277,13 @@ class FlxSound extends FlxBasic
 		amplitudeLeft = 0;
 		amplitudeRight = 0;
 		autoDestroy = false;
-		effect = null;
 
 		if (_transform == null)
 			_transform = new SoundTransform();
 		_transform.pan = 0;
+
+		_pitch = defaultPitch;
+		effect = null;
 	}
 
 	override public function destroy():Void
@@ -643,12 +644,10 @@ class FlxSound extends FlxBasic
 		{
 			_transform.volume = #if FLX_SOUND_SYSTEM (FlxG.sound.muted ? 0 : 1) * FlxG.sound.volume * #end
 				(group != null ? group.volume : 1) * _volume * _volumeAdjust;
-		}		
+		}
 
 		if (_channel != null)
-		{
 			_channel.soundTransform = _transform;
-		}
 	}
 
 	inline function get_audioSource()
