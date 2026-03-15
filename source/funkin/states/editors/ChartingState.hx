@@ -2595,27 +2595,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			else if (Conductor.songPosition >= currentSectionEnd) {
 				while (Conductor.songPosition >= currentSectionEnd) {
 					var nextSection:Int = curSection + 1;
-					if (_song.notes[nextSection] == null)
-						pushSection();
+					if (_song.notes[nextSection] == null) {
+						var sb = _song.notes[curSection].sectionBeats;
+						pushSection(sb);
+					}
 					curSection = nextSection;
 					currentSectionEnd = sectionStartTime(1);
 				}
-				reloadGridLayer();
-				updateSectionUI();
-				eventStepperStrumTime.stepSize = Conductor.stepCrochet;
-				stepperStrumTime.stepSize = Conductor.stepCrochet;
-				stepperSusLength.stepSize = Conductor.stepCrochet;
+				currentSectionStart = sectionStartTime();
+				onSectionChange();
 			}
 			else if (Conductor.songPosition < currentSectionStart) {
 				while (Conductor.songPosition < currentSectionStart) {
 					curSection = curSection - 1;
 					currentSectionStart = sectionStartTime();
 				}
-				reloadGridLayer();
-				updateSectionUI();
-				eventStepperStrumTime.stepSize = Conductor.stepCrochet;
-				stepperStrumTime.stepSize = Conductor.stepCrochet;
-				stepperSusLength.stepSize = Conductor.stepCrochet;
+				currentSectionEnd = sectionStartTime(1);
+				onSectionChange();
 			}
 		}
 
@@ -3221,6 +3217,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	{
 		if (_song.notes[sec] != null) {
 			curSection = sec;
+			currentSectionStart = sectionStartTime();
+			currentSectionEnd = sectionStartTime(1);
 
 			if (updateMusic) {
 				pauseTracks();
@@ -3228,9 +3226,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				Conductor.updateSteps();
 			}
 
-			reloadGridLayer();
-			updateSectionUI();
+			onSectionChange();
 		}
+	}
+
+	function onSectionChange() {
+		reloadGridLayer();
+		updateSectionUI();
 		eventStepperStrumTime.stepSize = Conductor.stepCrochet;
 		stepperStrumTime.stepSize = Conductor.stepCrochet;
 		stepperSusLength.stepSize = Conductor.stepCrochet;
@@ -3540,11 +3542,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
         var crochet:Float;
         if (Conductor.songPosition <= strumTime) {
             map = Conductor.getBPMFromSeconds(strumTime);
-            crochet = (60 / map.bpm) * 1000;
+            crochet = Conductor.calculateCrochet(map.bpm);
         }
         else {
             map = Conductor.getBPMFromSeconds(Conductor.songPosition);
-            crochet = (60 / Conductor.getBPMFromSeconds(strumTime).bpm) * 1000;
+            crochet = Conductor.calculateCrochet(Conductor.getBPMFromSeconds(strumTime).bpm);
         }
         
         return map.songTime + ((strumTime - map.songTime) / crochet * Conductor.crochet);
