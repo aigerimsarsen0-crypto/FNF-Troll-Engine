@@ -967,8 +967,10 @@ class ClientPrefs {
 			Main.bread.visible = ClientPrefs.bread;
 		#end
 
-		FlxG.sound.volume = ClientPrefs.masterVolume;
 		FlxG.autoPause = ClientPrefs.autoPause;
+		FlxG.sound.volume = ClientPrefs.masterVolume;
+		FlxG.sound.defaultMusicGroup.volume = ClientPrefs.songVolume;
+		FlxG.sound.defaultSoundGroup.volume = ClientPrefs.sfxVolume;
 
 		Main.game.set_antialiasing(globalAntialiasing);
 		Main.game.set_framerate(framerate);

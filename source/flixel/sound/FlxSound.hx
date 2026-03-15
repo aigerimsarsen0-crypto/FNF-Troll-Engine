@@ -39,18 +39,10 @@ import openfl.utils.AssetType;
 /**
  * This is the universal flixel sound object, used for streaming, music, and sound effects.
  */
-
-enum SoundContext {
-	SFX;
-	MUSIC;
-	MISC;
-}
 class FlxSound extends FlxBasic
 {
 	public static var defaultPitch:Float = 1;
 	
-	public var context:SoundContext = SFX;
-
 	var effectAux:ALAuxiliaryEffectSlot = AL.createAux(); // TODO: add removeAux
 
 	/**
@@ -649,14 +641,8 @@ class FlxSound extends FlxBasic
 	{
 		if (_transform != null)
 		{
-			var mod:Float = switch(context) {
-				case SFX: ClientPrefs.sfxVolume;
-				case MUSIC: ClientPrefs.songVolume;
-				default: 1.0;
-			}
-
 			_transform.volume = #if FLX_SOUND_SYSTEM (FlxG.sound.muted ? 0 : 1) * FlxG.sound.volume * #end
-				(group != null ? group.volume : 1) * _volume * _volumeAdjust * mod;
+				(group != null ? group.volume : 1) * _volume * _volumeAdjust;
 		}		
 
 		if (_channel != null)
