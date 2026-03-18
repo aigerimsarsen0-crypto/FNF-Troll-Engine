@@ -292,12 +292,13 @@ class Note extends NoteObject {
 	}
 
 	/**
+		Set this note's HSB values to the user defined column / quant colors.  
+
 		@param force If `true`, forces the colours to update even if `usesDefaultColours` is `false`
 	**/
 	public function updateColours(force:Bool = false){
 		if (!force && !usesDefaultColours) return;
-		if (colorSwap==null) return;
-		if (column == -1) return; // FUCKING PSYCH EVENT NOTES!!!
+		if (colorSwap == null) return;
 		
 		var hsb = isQuant ? ClientPrefs.quantHSV[quants.indexOf(quant)] : getNoteColours(currentAnimations);
 		colorSwap.setHSBIntArray(hsb);

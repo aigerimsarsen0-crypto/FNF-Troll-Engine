@@ -426,7 +426,7 @@ class NoteField extends FieldBase
 			strumOff *= sv;
 			
 			if ((hold.wasGoodHit || hold.parent.wasGoodHit) && !hold.tooLate) {
-				var scale:Float = 1 - ((strumDiff + crotchet) / crotchet);
+				var scale:Float = -strumDiff / crotchet;
 				if (scale <= 0.0) {
 					strumSub = 0;
 					strumOff = 0;

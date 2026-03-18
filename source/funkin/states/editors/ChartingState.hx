@@ -2140,7 +2140,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function updateKeyCount(count:Int) {
-		_song.keyCount = Math.ceil(Math.max(1, count));
+		PlayState.keyCount = _song.keyCount = Math.ceil(Math.max(1, count));
 		NoteAnimations.refreshKeyAnimations(_song.keyCount);
 		NoteAnimations.remap4KArray(_song.keyCount, defaultNoteColours, noteColours);
 
@@ -2615,7 +2615,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 
-		Conductor.updateSteps();
+		updateSteps();
 		strumLineUpdateY();
 
 		if (strumLineNotes.visible = quantArrow.visible = options.vortex) {
