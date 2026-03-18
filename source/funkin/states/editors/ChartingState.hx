@@ -633,7 +633,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		Conductor.cleanup();
 		Conductor.mapBPMChanges(_song);
-		Conductor.bpm = (_song.bpm);
+		Conductor.changeBPM(_song.bpm);
 		metroInterval = (60 / _song.bpm) * 1000;
 
 		this.tracks = Conductor.tracks;
@@ -836,7 +836,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var beat:Float = 0;
 		for (i => section in allSections) {			
 			if (section.changeBPM)
-				Conductor.bpm = (section.bpm);
+				Conductor.changeBPM(section.bpm);
 
 			while (section.sectionNotes.length > 0) {
 				var note = section.sectionNotes.pop();
@@ -847,7 +847,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			sectionStarts[i] = fuckFloatingPoints(Conductor.stepToMs(beat * 4));
 			beat += getSectionBeats(i);
 		}
-		Conductor.bpm = (bimp);
+		Conductor.changeBPM(bimp);
 		
 		allNotes.sort((a, b) -> return Std.int(b.strumTime - a.strumTime)); // descending order
 
@@ -3391,7 +3391,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		if (Conductor.bpm != daBPM) {
-			Conductor.bpm = (daBPM);
+			Conductor.changeBPM(daBPM);
 			metronomeStepper.value = daBPM;
 			metroInterval = (60 / daBPM) * 1000;
 		}
