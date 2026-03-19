@@ -3484,15 +3484,6 @@ class PlayState extends MusicBeatState
 			// added a shitty judge to deal w/ it tho!!
 			noteMiss(note, field, true);
 
-			if (!note.noMissAnimation && note.noteType == 'Hurt Note') {
-				for (char in getNoteCharacters(note, field)) {
-					if (char.animation.exists('hurt')) {
-						char.playAnim('hurt', true);
-						char.specialAnim = true;
-					}
-				}
-			}
-
 			note.wasGoodHit = true;
 			if (!note.isSustainNote && note.sustainLength==0)
 				field.removeNote(note);
