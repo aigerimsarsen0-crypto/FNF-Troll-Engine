@@ -152,7 +152,7 @@ class NoteField extends FieldBase
 
 			if (songSpeed != 0)
 			{
-				if (daNote.wasGoodHit && daNote.sustainLength > 0)
+				if (daNote.holdingTime > 0)
 					continue;
 				
 				var speed:Float = modManager.getNoteSpeed(daNote, modNumber, songSpeed);
