@@ -3429,7 +3429,7 @@ class PlayState extends MusicBeatState
 
 		// Sing animations
 		var chars: Array<Character> = getNoteCharacters(note, field);
-		if (note.noteScript?.call("playNoteAnim", [note, field, chars]) != Globals.Function_Stop)
+		if (note.noteScript?.call("playSingAnim", [note, field, chars]) != Globals.Function_Stop)
 			for (char in chars) 
 				char.playNote(note, field);
 
