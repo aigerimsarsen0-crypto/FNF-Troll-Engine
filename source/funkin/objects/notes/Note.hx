@@ -590,30 +590,14 @@ class Note extends NoteObject {
 		}
 
 		// because phantomarcade cant spell
-		var hasThatStupidAssTypo:Bool = false;
 		if (holdType == END && animPrefix.contains("purple")) {
-			hasThatStupidAssTypo = attemptToAddAnimationByPrefix(animName, 'pruple end hold', 24, true); // ?????
+			animation.addByPrefix(animName, 'pruple end hold', 24, true); // ?????
 		}
 		// this is autistic wtf
 
-		if (!hasThatStupidAssTypo) {
-			animation.addByPrefix(animName, animPrefix);
-		}
+		animation.addByPrefix(animName, animPrefix);
 		animation.play(animName, true);
 		scale.set(spriteScale, spriteScale);
-	}
-
-	// I stole this from psych lmao
-	// Modified to return if it was added or not.
-	function attemptToAddAnimationByPrefix(name:String, prefix:String, framerate:Float = 24, doLoop:Bool = true):Bool {
-		var animFrames = [];
-		@:privateAccess
-		animation.findByPrefix(animFrames, prefix); // adds valid frames to animFrames
-		if (animFrames.length < 1)
-			return false;
-
-		animation.addByPrefix(name, prefix, framerate, doLoop);
-		return true;
 	}
 
 	override function draw() {
