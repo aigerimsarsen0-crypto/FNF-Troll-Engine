@@ -233,7 +233,10 @@ class PlayState extends MusicBeatState
 
 	/** Songs can force this off prior to countdown start and modchart generation **/
 	public var centerNotefield:Bool = false;
-	/** Whether to save the score. modcharted songs should set this to false if disableModcharts is true **/
+	/** 
+		Whether to save the score.  
+		Modcharted songs should set this to false if disableModcharts is true
+	**/
 	public var saveScore:Bool = true;
 
 	#if ALLOW_DEPRECATION
@@ -2200,7 +2203,7 @@ class PlayState extends MusicBeatState
 
 	override function resyncTracks():Void
 	{
-		if (finishTimer != null || transitioning || isDead)
+		if (finishTimer != null || endingSong || isDead)
 			return;
 
 		if (showDebugTraces)
@@ -2451,6 +2454,11 @@ class PlayState extends MusicBeatState
 		MusicBeatState.switchState(new ChartingState(SONG));
 	}
 
+	/**
+		Checks if the player should die, and calls the game over function if so.
+		@param skipHealthCheck If true, the player will die regardless of their current health. Useful for instakill mechanics.
+		@returns Whether the player died or not.
+	**/
 	function doDeathCheck(?skipHealthCheck:Bool = false) {
 		if (isDead || practiceMode)
 			return false;
@@ -2682,25 +2690,17 @@ class PlayState extends MusicBeatState
 
 		if (prevCamFollow != null) prevCamFollow.put();
 		if (prevCamFollowPos != null) prevCamFollowPos.destroy();
-
-		if (instance != null) {
-			instance.camFollow.put();
-			instance.camFollowPos.destroy();
-		}
 	}
 
-
-	public var transitioning = false;
 	public function endSong():Void
 	{
-	// Should kill you if you tried to cheat
 		if (startedSong) {
+			// miss all unhit playfield notes that are within the song's length 
+			// (only within the song length because tutoriroll has a bunch of notes after the end of the song that you can't hit lol)
 			for (field in playfields.members) {
-				if(field.isPlayer) {
-					for(daNote in field.spawnedNotes) {
-						if (daNote.strumTime < songLength - ClientPrefs.hitWindow) {
-							health -= 0.05 * healthLoss;
-						}
+				for (note in field.spawnedNotes) {
+					if (note.strumTime < songLength - ClientPrefs.hitWindow) {
+						field.noteMissed.dispatch(note, field);
 					}
 				}
 			}
@@ -2709,43 +2709,40 @@ class PlayState extends MusicBeatState
 				return;
 		}
 
-		hud.songEnding();
-		hud.updateTime = false;
-		canPause = false;
 		endingSong = true;
+		canPause = false;
 		camZooming = false;
-		inCutscene = false;
-
-		deathCounter = 0;
-		seenCutscene = false;
+		hud.songEnding();
 
 		var ret:Dynamic = callOnScripts('onEndSong');
-
-		if (transitioning || ret == Globals.Function_Stop)
+		if (endingSong || ret == Globals.Function_Stop)
 			return;
 
-		transitioning = true;
+		// Reset static song variables
+		seenCutscene = false;
+		deathCounter = 0;
 
 		if (chartingMode) {
 			openChartEditor();
 			return;
 		}
 
-		// Save song score and rating.
-
-		if (saveScore && SONG.validScore && ratingFC != stats.fail)
+		////
+		var saveScore:Bool = saveScore && SONG.validScore && ratingFC != stats.fail;
+		// TODO: add a modcharted variable which songs w/ modcharts should set to true, then make it so if modcharts are disabled the score wont get added
+		
+		if (saveScore) // Save song score and rating.
 			Highscore.saveScoreRecord(songId, difficultyName, stats.getScoreRecord());
 
-		var gotoNextThing:Void -> Void = gotoMenus;
-		var nextSong:BaseSong = playlistSongs[playlistIndex + 1];
-
 		if (isStoryMode) {
-			// TODO: add a modcharted variable which songs w/ modcharts should set to true, then make it so if modcharts are disabled the score wont get added
-			// same check should be in the saveScore check above too
-			if (ratingFC != 'Fail')
+			if (saveScore)
 				campaignScore += stats.score;
 			campaignMisses += songMisses;
 		}
+
+		////
+		var gotoNextThing:Void -> Void = gotoMenus;
+		var nextSong:BaseSong = playlistSongs[playlistIndex + 1];
 
 		if (nextSong != null) {
 			prevCamFollow = camFollow;
@@ -3859,6 +3856,9 @@ class PlayState extends MusicBeatState
 			script.call("onDestroy");
 			script.stop();
 		}
+
+		camFollow.put();
+		camFollowPos.destroy();
 
 		sectionCamera.put();
 		customCamera.put();
