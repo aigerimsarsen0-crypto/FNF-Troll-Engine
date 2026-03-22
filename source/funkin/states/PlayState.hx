@@ -495,7 +495,7 @@ class PlayState extends MusicBeatState
 
 	public var notetypeScripts:Map<String, FunkinHScript> = []; // custom notetypes for scriptVer '1'
 	public var hudSkinScripts:Map<String, FunkinHScript> = []; // Doing this so you can do shit like i.e having it swap between pixel and normal HUD
-	public var eventHandler = new funkin.data.SongEvent.SongEventHandler();
+	public var eventManager = new funkin.data.SongEvent.SongEventManager();
 
 	public var hudSkin(default, set):String;
 	public var hudSkinScript:FunkinHScript; // this is the HUD skin used for countdown, judgements, etc
@@ -1492,7 +1492,7 @@ class PlayState extends MusicBeatState
 	}
 
 	function shouldPush(event:PsychEvent){
-		return eventHandler.get(event.event)?.shouldPush(event) ?? true;
+		return eventManager.get(event.event)?.shouldPush(event) ?? true;
 	}
 
 	static function eventNoteSort(a:PsychEvent, b:PsychEvent)
@@ -1651,7 +1651,7 @@ class PlayState extends MusicBeatState
 
 		// create event scripts
 		for (eventName in eventPushedMap.keys()) {
-			eventHandler.get(eventName);
+			eventManager.get(eventName);
 			firstEventPush(eventName);
 		}
 
@@ -1873,7 +1873,7 @@ class PlayState extends MusicBeatState
 		if (ret != null && (ret is Int || ret is Float))
 			return ret;
 
-		return (eventHandler.get(event.event)?.getOffset(event)) ?? 0.0;
+		return (eventManager.get(event.event)?.getOffset(event)) ?? 0.0;
 	}
 
 	// called for every event note
@@ -1882,13 +1882,13 @@ class PlayState extends MusicBeatState
 		if (event.value1 == null) event.value1 = '';
 		if (event.value2 == null) event.value2 = '';
 
-		eventHandler.get(event.event)?.onPush(event);
+		eventManager.get(event.event)?.onPush(event);
 		callOnScripts("eventPushed", [event]);
 	}
 
 	// called only once for each different event
 	function firstEventPush(eventName:String) {
-		eventHandler.get(eventName)?.onLoad();
+		eventManager.get(eventName)?.onLoad();
 		callOnScripts("firstEventPush", [eventName]);
 	}
 
@@ -2295,7 +2295,7 @@ class PlayState extends MusicBeatState
 
 		for (script in notetypeScripts)
 			script.call("update", [elapsed]);
-		eventHandler.update(elapsed);
+		eventManager.update(elapsed);
 
 		callOnScripts('update', [elapsed]);
 
@@ -2577,7 +2577,7 @@ class PlayState extends MusicBeatState
 
 	public function triggerEvent(data:PsychEvent, ?time:Float) {
 		triggerEventNote(data.event, data.value1, data.value2, time);
-		eventHandler.get(data.event)?.onTrigger(data, time);
+		eventManager.get(data.event)?.onTrigger(data, time);
 	}
 
 	//// Kinda rewrote the camera shit so that its 'easier' to mod
@@ -3863,7 +3863,7 @@ class PlayState extends MusicBeatState
 
 		notetypeScripts.clear();
 		hudSkinScripts.clear();
-		eventHandler.destroy();
+		eventManager.destroy();
 
 		Conductor.cleanup();
 		instance = null;
