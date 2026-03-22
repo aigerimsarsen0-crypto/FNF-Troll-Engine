@@ -370,7 +370,6 @@ class PlayState extends MusicBeatState
 	public var modManager:ModManager;
 	public var notefields = new NotefieldRenderer();
 	public var playfields = new FlxTypedGroup<PlayField>();
-	public var grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
 
 	public var playerField:PlayField;
 	public var dadField:PlayField;
@@ -826,14 +825,6 @@ class PlayState extends MusicBeatState
 		Cache.loadWithList(shitToLoad);
 		shitToLoad = [];
 
-		//// Asset precaching end
-
-		var splash:NoteSplash = new NoteSplash(100, 100, 0);
-		splash.alpha = 0.0;
-
-		grpNoteSplashes.cameras = [camHUD];
-		grpNoteSplashes.add(splash);
-
 		////
 		displayedDifficulty = Paths.getString('difficultyName_$difficultyName') ?? difficultyName.replace("-"," ").capitalize();
 		displayedSong = metadata?.songName ?? songId.replace("-"," ").capitalize();
@@ -981,7 +972,6 @@ class PlayState extends MusicBeatState
 		add(ratingGroup);
 		add(playfields);
 		add(notefields);
-		add(grpNoteSplashes);
 		add(timingTxt);
 
 		luaDebugGroup.cameras = [camOther];
