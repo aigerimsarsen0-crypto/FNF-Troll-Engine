@@ -143,18 +143,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	public var hudSkin(default, set):String = 'default';
 	public var hudSkinScript:Null<FunkinHScript> = null;
-	public var hudSkinScripts:Map<String, FunkinHScript> = [];
+	public var hudSkinMap:Map<String, FunkinHScript> = [];
 
 	public function getHudSkinScript(name:String):Null<FunkinHScript> {
-		if (name.length == 0 || hudSkinScripts.exists(name))
-			return hudSkinScripts.get(name);
+		if (name.length == 0 || hudSkinMap.exists(name))
+			return hudSkinMap.get(name);
 
 		var path = Paths.getHScriptPath('hudskins/$name');
 		if (path == null)
 			return null;
 		
 		var script:FunkinHScript = FunkinHScript.fromFile(path, name);
-		hudSkinScripts.set(name, script);
+		hudSkinMap.set(name, script);
 		return script;
 	}
 		
@@ -3880,12 +3880,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 		notetypeScripts.clear();
 		
-		for (script in hudSkinScripts) {
+		for (script in hudSkinMap) {
 			if (script == null) continue;
 			script.call("onDestroy");
 			script.stop();
 		}
-		hudSkinScripts.clear();
+		hudSkinMap.clear();
 
 		saveOptions();
 		

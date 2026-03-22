@@ -494,11 +494,11 @@ class PlayState extends MusicBeatState
 	public var modchartSounds:Map<String, FlxSound> = new Map();
 
 	public var notetypeScripts:Map<String, FunkinHScript> = []; // custom notetypes for scriptVer '1'
-	public var hudSkinScripts:Map<String, FunkinHScript> = []; // Doing this so you can do shit like i.e having it swap between pixel and normal HUD
 	public var eventManager = new funkin.data.SongEvent.SongEventManager();
 
 	public var hudSkin(default, set):String;
 	public var hudSkinScript:FunkinHScript; // this is the HUD skin used for countdown, judgements, etc
+	public var hudSkinMap:Map<String, FunkinHScript> = []; // Doing this so you can do shit like i.e having it swap between pixel and normal HUD
 
 	////
 	@:noCompletion function set_hudSkin(value:String){		
@@ -3538,13 +3538,13 @@ class PlayState extends MusicBeatState
 	}
 
 	public function getHudSkinScript(name:String):Null<FunkinHScript> {
-		if (hudSkinScripts.exists(name))
-			return hudSkinScripts.get(name);
+		if (hudSkinMap.exists(name))
+			return hudSkinMap.get(name);
 
 		var path = Paths.getHScriptPath('hudskins/$name');
 		var script:FunkinHScript = (path==null) ? null : createHScript(path, name);
 
-		hudSkinScripts.set(name, script);
+		hudSkinMap.set(name, script);
 		return script;
 	}
 	#end
@@ -3604,7 +3604,7 @@ class PlayState extends MusicBeatState
 			return callOnScripts(event, args, ignoreStops, exclusions, scriptArray, vars, false);
 
 	inline public function isSpecialScript(script:FunkinScript)
-		return notetypeScripts.exists(script.scriptName) || hudSkinScripts.exists(script.scriptName);
+		return notetypeScripts.exists(script.scriptName) || hudSkinMap.exists(script.scriptName);
 
 	public function callOnScripts(event:String, ?args:Array<Dynamic>, ignoreStops:Bool = false, ?exclusions:Array<String>, ?scriptArray:Array<Dynamic>,
 			?vars:Map<String, Dynamic>, ?ignoreSpecialShit:Bool = true):Dynamic
@@ -3862,7 +3862,7 @@ class PlayState extends MusicBeatState
 		FunkinHScript.defaultVars.clear();
 
 		notetypeScripts.clear();
-		hudSkinScripts.clear();
+		hudSkinMap.clear();
 		eventManager.destroy();
 
 		Conductor.cleanup();
