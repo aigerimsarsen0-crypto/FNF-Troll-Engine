@@ -31,6 +31,8 @@ typedef JudgmentData = {
 	var health:Float;
 	/** Whether this judge should cause a note splash **/
 	var noteSplash:Bool;
+	/** If this is true then this judge wont show a judgment image **/
+	var ?hideJudge:Bool;
 	/** Where in the judgment sheet this judgment lies **/
 	//var frame:Int;
 
@@ -41,8 +43,6 @@ typedef JudgmentData = {
 	/** if this isn't null, then PBOT wont do any calculations and will instead just add these to the pbot score/accuracy**/
 	var ?pbotPoints:Float;
 	
-	/** If this is true then this judge wont show a judgment image **/
-	var ?hideJudge:Bool;
 	/** How this judge affects your combo (IGNORE, INCREMENT or BREAK). Default behaviour is INCREMENT **/
 	var ?comboBehaviour:ComboBehaviour;
 	/** Used for mines, etc. makes it so the window isnt scaled by the judge difficulty. Defaults behaviour is false **/

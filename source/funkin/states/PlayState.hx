@@ -2447,7 +2447,7 @@ class PlayState extends MusicBeatState
 
 	/**
 		Checks if the player should die, and calls the game over function if so.
-		@param skipHealthCheck If true, the player will die regardless of their current health. Useful for instakill mechanics.
+		@param skipHealthCheck If true, the game over will be called regardless of the player's health.
 		@returns Whether the player died or not.
 	**/
 	function doDeathCheck(?skipHealthCheck:Bool = false) {
@@ -2969,7 +2969,7 @@ class PlayState extends MusicBeatState
 		callOnScripts("onDisplayComboPost", [combo]);
 	}
 
-	private function applyJudgmentData(judgeData:JudgmentData, diff:Float, ?bot:Bool = false, ?show:Bool = true){
+	private function applyJudgmentData(judgeData:JudgmentData, diff:Float, bot:Bool = false, show:Bool = true) {
 		if(judgeData==null){
 			trace("You didnt give a valid JudgmentData to applyJudgmentData!");
 			return;
@@ -3044,19 +3044,22 @@ class PlayState extends MusicBeatState
 		return mutatedJudgeData;
 	}
 
-	private function applyJudgment(judge:Judgment, ?diff:Float = 0, ?show:Bool = true)
-		applyJudgmentData(judgeManager.judgmentData.get(judge), diff);
+	/**
+		Shortcut for `applyJudgmentData(judgeManager.judgmentData[judge])`
+	**/
+	private function applyJudgment(judge:Judgment, diff:Float = 0, bot:Bool = false, show:Bool = true)
+		applyJudgmentData(judgeManager.judgmentData.get(judge), diff, bot, show);
 
-	private function judge(note:Note, field:PlayField=null) {
-		if (field == null)
-			field = getFieldFromNote(note);
+	private function judge(note:Note, ?field:PlayField) {
+		field ??= getFieldFromNote(note);
+		var bot = field?.autoPlayed == true;
 
-		var judgeData:JudgmentData = applyNoteJudgment(note, field.autoPlayed);
+		var judgeData:JudgmentData = applyNoteJudgment(note, bot);
 		if(judgeData==null)return;
 
 		note.ratingMod = judgeData.accuracy * 0.01;
 		note.rating = judgeData.internalName;
-		if (note.noteSplashBehaviour == FORCED || judgeData.noteSplash && !note.noteSplashDisabled)
+		if (!note.noteSplashDisabled && judgeData.noteSplash)
 			spawnNoteSplashOnNote(note, field);
 
 		var hitDiff = note.hitResult.hitDiff + ClientPrefs.ratingOffset;
@@ -3066,7 +3069,7 @@ class PlayState extends MusicBeatState
 			hitDiff: hitDiff
 		});
 
-		if (ClientPrefs.showMS && (field==null || !field.autoPlayed))
+		if (ClientPrefs.showMS && !bot)
 		{
 			displayTiming(hitDiff, judgeData);
 		}
@@ -3229,7 +3232,7 @@ class PlayState extends MusicBeatState
 	}
 
 	// You didn't hit the key and let it go offscreen, also used by Hurt Notes
-	function noteMiss(daNote:Note, field:PlayField, ?mine:Bool=false):Void
+	function noteMiss(daNote:Note, field:PlayField, mine:Bool=false):Void
 	{
 		// Dupe note remove
 		if (field.isPlayer) {
@@ -3245,10 +3248,14 @@ class PlayState extends MusicBeatState
 			}
 		}
 
-		if (daNote.sustainLength > 0 && daNote.hitResult.judgment != UNJUDGED){
-			daNote.hitResult.judgment = DROPPED_HOLD;
-		}else
-			daNote.hitResult.judgment = MISS;
+		if (!mine) {
+			if (daNote.sustainLength > 0 && daNote.hitResult.judgment != UNJUDGED)
+				daNote.hitResult.judgment = DROPPED_HOLD;
+			else
+				daNote.hitResult.judgment = MISS;
+				
+			daNote.hitResult.hitDiff = ClientPrefs.hitWindow;
+		}
 
 		if(callOnScripts("onNoteMiss", [daNote, field]) == Globals.Function_Stop)
 			return;
@@ -3272,8 +3279,6 @@ class PlayState extends MusicBeatState
 			daNote.noMissAnimation = true;
 		}
 
-		daNote.hitResult.hitDiff = ClientPrefs.hitWindow;
-
 		if (!daNote.ratingDisabled) {
 			stats.judged.push({
 				strumTime: daNote.strumTime,
@@ -3284,9 +3289,8 @@ class PlayState extends MusicBeatState
 			if (!mine) {
 				songMisses++;
 				applyNoteJudgment(daNote, false);
-				//applyJudgment(daNote.hitResult.judgment, ClientPrefs.hitWindow);
 			}else {
-				applyJudgment(MISS_MINE, ClientPrefs.hitWindow);
+				applyJudgment(daNote.hitResult.judgment, daNote.hitResult.hitDiff);
 				health -= daNote.missHealth * healthLoss;
 			}
 
@@ -3449,24 +3453,19 @@ class PlayState extends MusicBeatState
 			playShithound();
 		}
 
-		if (note.ratingDisabled) {
-			// NOTHING!!!! Note will just dissappear
-
-		}else if (note.hitResult.judgment != MISS_MINE)
-			judge(note, field);
-
-		else {
+		if (note.hitResult.judgment == MISS_MINE) {
 			// tbh I hate hitCausesMiss lol its retarded
 			// added a shitty judge to deal w/ it tho!!
 			noteMiss(note, field, true);
 
-			note.wasGoodHit = true;
 			if (!note.isSustainNote && note.sustainLength==0)
 				field.removeNote(note);
 			else if (note.isSustainNote && note.parent != null)
 				note.parent.unhitTail.remove(note);
 
 			return;
+		} else if (!note.ratingDisabled) {
+			judge(note, field);
 		}
 
 
@@ -3493,8 +3492,7 @@ class PlayState extends MusicBeatState
 
 	public function spawnNoteSplashOnNote(note:Note, ?field:PlayField) {
 		if (ClientPrefs.noteSplashes && note != null) {
-			if(field==null)
-				field = getFieldFromNote(note);
+			field ??= getFieldFromNote(note);
 
 			var strum:StrumNote = field.strumNotes[note.column];
 			if(strum != null) {

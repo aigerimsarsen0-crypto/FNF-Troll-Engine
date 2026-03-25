@@ -525,12 +525,13 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 		if (inControl && autoPlayed)
 		{
 			for(i in 0...keyCount){
-				for (daNote in getTapNotes(i, (note:Note) -> !note.tooLate && !note.wasGoodHit && !note.ignoreNote && !note.hitCausesMiss)){
-					var hitDiff = Conductor.songPosition - daNote.strumTime;
+				for (note in getTapNotes(i, (note:Note) -> !note.tooLate && !note.wasGoodHit && !note.ignoreNote && !note.hitCausesMiss)){
+					var hitTime:Float = Conductor.songPosition;
+					var hitDiff:Float = hitTime - note.strumTime;
 					if (isPlayer && (hitDiff + ClientPrefs.ratingOffset) >= (-5 * (Wife3.timeScale>1 ? 1 : Wife3.timeScale)) || hitDiff >= 0){
-						daNote.hitResult.judgment = judgeManager.useEpics ? TIER5 : TIER4;
-						daNote.hitResult.hitDiff = (hitDiff > -5) ? -5 : hitDiff; 
-						if (noteHitCallback!=null) noteHitCallback(daNote, this);
+						note.hitResult.judgment = judgeManager.useEpics ? TIER5 : TIER4;
+						note.hitResult.hitDiff = (hitDiff > -5) ? -5 : hitDiff; 
+						noteHitCallback(note, this);
 					}
 					
 				}
