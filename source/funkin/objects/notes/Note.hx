@@ -212,7 +212,7 @@ class Note extends NoteObject {
 
 	#if true
 	/** Which characters sing this note, if it's blank then the playfield's characters are used **/
-	public var characters:Array<Character> = [];
+	public var characters:Array<Character> = null;
 
 	/** Whether if gf should also sing this note **/
 	public var gfNote:Bool = false;

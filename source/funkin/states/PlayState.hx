@@ -3373,18 +3373,11 @@ class PlayState extends MusicBeatState
 	
 	}
 
-	function getNoteCharacters(note:Note, field:PlayField):Array<Character> {
-		var chars:Array<Character> = note.characters.copy();
-
+	inline function getNoteCharacters(note:Note, field:PlayField):Array<Character> {
 		if (note.gfNote)
-			if (gf != null) chars.push(gf);
-
-		if (chars.length == 0) {
-			for (c in field.characters)
-				chars.push(c);
-		}
-
-		return chars;
+			return (gf != null) ? [gf] : [];
+		else
+			return (note.characters ?? field.characters).copy();
 	}
 
 	function commonNoteHit(note:Note, field:PlayField){ // things done by all note hit functions
