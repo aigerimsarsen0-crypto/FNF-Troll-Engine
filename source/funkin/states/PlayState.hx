@@ -2969,19 +2969,19 @@ class PlayState extends MusicBeatState
 		callOnScripts("onDisplayComboPost", [combo]);
 	}
 
-	private function applyJudgmentData(judgeData:JudgmentData, diff:Float, bot:Bool = false, show:Bool = true) {
+	private function applyJudgmentData(judgeData:JudgmentData, hitData:HitResult, show:Bool = true) {
 		if(judgeData==null){
 			trace("You didnt give a valid JudgmentData to applyJudgmentData!");
 			return;
 		}
-		if(callOnScripts("onApplyJudgmentData", [judgeData, diff, bot, show]) == Globals.Function_Stop)
+		if(callOnScripts("onApplyJudgmentData", [judgeData, hitData, show]) == Globals.Function_Stop)
 			return;
 
 		stats.score += Math.floor(judgeData.score * playbackRate);
 		health += (judgeData.health * 0.02) * (judgeData.health < 0 ? healthLoss : healthGain);
 		songHits++;
 
-		stats.calculateAccuracy(judgeData, diff); // deals with accuracy calculations
+		stats.calculateAccuracy(judgeData, hitData.hitDiff); // deals with accuracy calculations
 
 		if (perfectMode && stats.totalNotesHit < stats.totalPlayed)
 			doDeathCheck(true);
@@ -3001,6 +3001,8 @@ class PlayState extends MusicBeatState
 
 		stats.judgements.set(judgeData.internalName, stats.judgements.get(judgeData.internalName) + 1);
 
+		stats.judged.push(hitData);
+
 		RecalculateRating();
 
 		if (ClientPrefs.coloredCombos)
@@ -3015,8 +3017,8 @@ class PlayState extends MusicBeatState
 				comboColor = hud.judgeColours.get("epic");
 		}
 
-		hudSkinScript?.call("onApplyJudgmentDataPost", [judgeData, diff, bot, show]);
-		callOnScripts("onApplyJudgmentDataPost", [judgeData, diff, bot, show]);
+		hudSkinScript?.call("onApplyJudgmentDataPost", [judgeData, hitData, show]);
+		callOnScripts("onApplyJudgmentDataPost", [judgeData, hitData, show]);
 
 		if(show){
 			if(judgeData.hideJudge!=true)
@@ -3026,7 +3028,7 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	private function applyNoteJudgment(note:Note, bot:Bool = false):Null<JudgmentData>
+	private function applyNoteJudgment(note:Note):Null<JudgmentData>
 	{
 		if(note.hitResult.judgment == UNJUDGED)return null;
 		var judgeData:JudgmentData = judgeManager.judgmentData.get(note.hitResult.judgment);
@@ -3039,39 +3041,25 @@ class PlayState extends MusicBeatState
 			mutatedJudgeData = cast ret;
 		
 
-		applyJudgmentData(mutatedJudgeData, note.hitResult.hitDiff, bot, true);
+		applyJudgmentData(mutatedJudgeData, note.hitResult, true);
 
 		return mutatedJudgeData;
 	}
 
-	/**
-		Shortcut for `applyJudgmentData(judgeManager.judgmentData[judge])`
-	**/
-	private function applyJudgment(judge:Judgment, diff:Float = 0, bot:Bool = false, show:Bool = true)
-		applyJudgmentData(judgeManager.judgmentData.get(judge), diff, bot, show);
-
 	private function judge(note:Note, ?field:PlayField) {
-		field ??= getFieldFromNote(note);
-		var bot = field?.autoPlayed == true;
-
-		var judgeData:JudgmentData = applyNoteJudgment(note, bot);
+		var judgeData:JudgmentData = applyNoteJudgment(note);
 		if(judgeData==null)return;
+
+		field ??= getFieldFromNote(note);
 
 		note.ratingMod = judgeData.accuracy * 0.01;
 		note.rating = judgeData.internalName;
 		if (!note.noteSplashDisabled && judgeData.noteSplash)
 			spawnNoteSplashOnNote(note, field);
 
-		var hitDiff = note.hitResult.hitDiff + ClientPrefs.ratingOffset;
-		stats.judged.push({
-			strumTime: note.strumTime,
-			judgment: note.hitResult.judgment,
-			hitDiff: hitDiff
-		});
-
-		if (ClientPrefs.showMS && !bot)
+		if (ClientPrefs.showMS && !note.hitResult.bot && !judgeData.hideJudge)
 		{
-			displayTiming(hitDiff, judgeData);
+			displayTiming(note.hitResult.hitDiff, judgeData);
 		}
 
 		hud.noteJudged(judgeData, note, field);
@@ -3280,17 +3268,11 @@ class PlayState extends MusicBeatState
 		}
 
 		if (!daNote.ratingDisabled) {
-			stats.judged.push({
-				strumTime: daNote.strumTime,
-				judgment: daNote.hitResult.judgment,
-				hitDiff: daNote.hitResult.hitDiff
-			});
-
 			if (!mine) {
 				songMisses++;
-				applyNoteJudgment(daNote, false);
+				applyNoteJudgment(daNote);
 			}else {
-				applyJudgment(daNote.hitResult.judgment, daNote.hitResult.hitDiff);
+				applyNoteJudgment(daNote);
 				health -= daNote.missHealth * healthLoss;
 			}
 

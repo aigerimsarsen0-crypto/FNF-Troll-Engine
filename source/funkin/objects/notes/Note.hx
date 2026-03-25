@@ -1,20 +1,15 @@
 package funkin.objects.notes;
 
+import funkin.data.JudgmentManager.Judgment;
 import funkin.data.JudgmentManager.JudgmentData;
+import funkin.data.JudgmentManager.HitResult;
 import funkin.scripts.*;
 import funkin.states.PlayState;
 import funkin.states.editors.ChartingState;
 import funkin.objects.shaders.NoteColorSwap;
 import funkin.objects.playfields.*;
-import funkin.data.JudgmentManager.Judgment;
 
 using StringTools;
-
-@:structInit
-class HitResult {
-	public var judgment:Judgment = UNJUDGED;
-	public var hitDiff:Float = 0.0;
-}
 
 enum abstract SplashBehaviour(Int) from Int to Int {
 	/**Only splashes on judgements that have splashes**/

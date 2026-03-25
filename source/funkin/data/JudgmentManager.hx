@@ -52,6 +52,38 @@ typedef JudgmentData = {
 
 }
 
+@:structInit
+class HitResult {
+	/** Resulting judgment based on how late you hit the note **/
+	public var judgment:Judgment = UNJUDGED;
+
+	/** How late the note was hit **/
+	public var hitDiff:Float = 0.0;
+
+	/** Time at which the note was hit **/
+	public var hitTime:Float = 0.0;
+
+	/** Whether the note was hit by botplay **/
+	public var bot:Bool = false;
+
+	/** `strumTime` of the `Note` that should have produced this `HitResult` **/
+	public var strumTime(get, never):Float;
+
+	// You could probably get it from the Note itself, but if not then here ya go.
+	@:noCompletion inline function get_strumTime():Float
+		return hitTime - hitDiff;
+
+	inline public function set(judgment:Judgment, hitDiff:Float, hitTime:Float, bot:Bool = false) {
+		this.judgment = judgment;
+		this.hitDiff = hitDiff;
+		this.hitTime = hitTime;
+		this.bot = bot;
+	}
+
+	inline public function fromTimes(judgment:Judgment, strumTime:Float, hitTime:Float, bot:Bool = false)
+		set(judgment, hitTime - strumTime, hitTime, bot);
+}
+
 /**
  * Ease of access to default judgments
  */

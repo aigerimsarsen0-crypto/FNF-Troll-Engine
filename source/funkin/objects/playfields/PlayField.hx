@@ -289,8 +289,7 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 					continue;
 				var judge:Judgment = judgeManager.judgeNote(note, hitTime);
 				if (judge != UNJUDGED){
-					note.hitResult.judgment = judge;
-					note.hitResult.hitDiff = hitTime - note.strumTime;
+					note.hitResult.fromTimes(judge, note.strumTime, hitTime);
 					noteHitCallback(note, this);
 					return note;
 				}
@@ -529,8 +528,12 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 					var hitTime:Float = Conductor.songPosition;
 					var hitDiff:Float = hitTime - note.strumTime;
 					if (isPlayer && (hitDiff + ClientPrefs.ratingOffset) >= (-5 * (Wife3.timeScale>1 ? 1 : Wife3.timeScale)) || hitDiff >= 0){
-						note.hitResult.judgment = judgeManager.useEpics ? TIER5 : TIER4;
-						note.hitResult.hitDiff = (hitDiff > -5) ? -5 : hitDiff; 
+						note.hitResult.set(
+							judgeManager.useEpics ? TIER5 : TIER4,
+							(hitDiff > -5) ? -5 : hitDiff,
+							hitTime,
+							true
+						);
 						noteHitCallback(note, this);
 					}
 					
@@ -546,11 +549,11 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 					while (noteList.length > 0)
 					{
 						var note:Note = noteList.pop();
-						var judge:Judgment = judgeManager.judgeNote(note, Conductor.songPosition);
+						var hitTime:Float = Conductor.songPosition;
+						var judge:Judgment = judgeManager.judgeNote(note, hitTime);
 						if (judge != UNJUDGED)
 						{
-							note.hitResult.judgment = judge;
-							note.hitResult.hitDiff = Conductor.songPosition - note.strumTime;
+							note.hitResult.fromTimes(judge, note.strumTime, hitTime);			
 							noteHitCallback(note, this);
 						}
 						
