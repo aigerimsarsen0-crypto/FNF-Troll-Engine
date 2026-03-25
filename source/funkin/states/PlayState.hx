@@ -3031,9 +3031,6 @@ class PlayState extends MusicBeatState
 		var judgeData:JudgmentData = judgeManager.judgmentData.get(note.hitResult.judgment);
 		if(judgeData==null)return null;
 
-		if (callOnScripts("onApplyNoteJudgment", [note, judgeData, bot]) == Globals.Function_Stop)
-			return null;
-
 		var mutatedJudgeData:JudgmentData =  note.transformJudgeData(Reflect.copy(judgeData));
 
 		var ret:Dynamic = callOnScripts("transformJudgeData", [note, mutatedJudgeData]);
@@ -3042,8 +3039,6 @@ class PlayState extends MusicBeatState
 		
 
 		applyJudgmentData(mutatedJudgeData, note.hitResult.hitDiff, bot, true);
-
-		callOnScripts("onApplyNoteJudgmentPost", [note, mutatedJudgeData, bot]);
 
 		return mutatedJudgeData;
 	}
