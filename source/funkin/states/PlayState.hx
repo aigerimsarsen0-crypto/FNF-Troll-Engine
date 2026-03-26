@@ -1088,6 +1088,7 @@ class PlayState extends MusicBeatState
 	}
 
 	inline function onCreatePost() {
+		callOnAllScripts("onCreatePost");
 		signals.onCreatePost.dispatch();
 	}
 
