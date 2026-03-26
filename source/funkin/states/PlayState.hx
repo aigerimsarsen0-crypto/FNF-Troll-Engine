@@ -3022,7 +3022,7 @@ class PlayState extends MusicBeatState
 			if(judgeData.hideJudge!=true)
 				displayJudgment(judgeData.internalName);
 			if(judgeData.comboBehaviour != IGNORE)
-				displayCombo(judgeData.comboBehaviour == BREAK ? (stats.cbCombo > 1 ? -stats.cbCombo : 0) : stats.combo);
+				displayCombo(judgeData.comboBehaviour == BREAK ? (stats.cbCombo > 0 ? -stats.cbCombo : 0) : stats.combo);
 		}
 	}
 
