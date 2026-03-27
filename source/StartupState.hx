@@ -72,8 +72,7 @@ class StartupState extends FlxTransitionableState
 		UpdaterState.clearTemps("./");
 		#end
 
-		FlxTransitionableState.defaultTransIn = FadeTransition;
-		FlxTransitionableState.defaultTransOut = FadeTransition;
+		FlxTransitionableState.defaultTransition = FadeTransition;
 
 		#if FUNNY_ALLOWED
 		var bread = Main.bread;
