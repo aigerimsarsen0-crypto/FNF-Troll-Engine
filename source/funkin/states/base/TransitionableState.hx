@@ -1,4 +1,4 @@
-package flixel.addons.transition;
+package funkin.states.base;
 // modified by Nebula the Zorua for Andromeda Engine 1.0
 // replaces the TransitionData bullshit with substates
 // the substate should have a start, setStatus and finishCallback property
@@ -9,9 +9,9 @@ package flixel.addons.transition;
 // custom transitions should override the create and start methods, then call finish when they're done.
 
 import flixel.FlxState;
-import flixel.addons.transition.FlxTransitionSprite.TransitionStatus;
+import funkin.transitions.Transition;
 
-class FlxTransitionableState extends FlxState
+class TransitionableState extends FlxState
 {
 	public static var defaultTransition:Class<Transition> = null;
 

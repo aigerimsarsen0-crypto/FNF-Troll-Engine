@@ -42,7 +42,7 @@ import flixel.math.*;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
 import flixel.system.FlxAssets.FlxSoundAsset;
-import flixel.addons.transition.FlxTransitionableState;
+import funkin.states.base.TransitionableState;
 import flixel.group.FlxGroup;
 import flixel.group.FlxSpriteGroup;
 import flixel.input.keyboard.FlxKey;
@@ -2348,7 +2348,7 @@ class PlayState extends MusicBeatState
 				openChartEditor();
 
 			}else if (FlxG.keys.anyJustPressed(debugKeysCharacter)) {
-				FlxTransitionableState.skipNextTransOut = true;
+				TransitionableState.skipNextTransOut = true;
 				persistentUpdate = false;
 				pause();
 				MusicBeatState.switchState(new CharacterEditorState(SONG.player2));
@@ -2431,7 +2431,7 @@ class PlayState extends MusicBeatState
 
 	function openChartEditor()
 	{
-		FlxTransitionableState.skipNextTransOut = true;
+		TransitionableState.skipNextTransOut = true;
 		persistentUpdate = false;
 		pause();
 
@@ -2657,14 +2657,14 @@ class PlayState extends MusicBeatState
 		pause();
 
 		if(noTrans)
-			FlxTransitionableState.skipNextTransOut = true;
+			TransitionableState.skipNextTransOut = true;
 
 		MusicBeatState.resetState();
 	}
 
 	public static function gotoMenus()
 	{
-		FlxTransitionableState.skipNextTransIn = false;
+		TransitionableState.skipNextTransIn = false;
 
 		// MusicBeatState.switchState(new MainMenuState());
 		if (isStoryMode){
@@ -2740,8 +2740,8 @@ class PlayState extends MusicBeatState
 			prevCamFollowPos = camFollowPos;
 
 			gotoNextThing = function gotoNextSong() {
-				FlxTransitionableState.skipNextTransIn = true;
-				FlxTransitionableState.skipNextTransOut = true;
+				TransitionableState.skipNextTransIn = true;
+				TransitionableState.skipNextTransOut = true;
 
 				PlayState.playlistIndex++;
 				trace('LOADING NEXT SONG: $nextSong, (${PlayState.playlistIndex + 1} / ${PlayState.playlistSongs.length})');

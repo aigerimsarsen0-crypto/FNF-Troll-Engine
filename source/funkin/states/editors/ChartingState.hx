@@ -29,7 +29,7 @@ import flixel.util.FlxGradient;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.ui.*;
 import flixel.addons.ui.FlxUIDropDownMenu.FlxUIDropDownHeader;
-import flixel.addons.transition.FlxTransitionableState;
+import funkin.states.base.TransitionableState;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.text.FlxText;
@@ -343,7 +343,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		instance = this;
 		updateSongPos = false;
 		
-		FlxTransitionableState.skipNextTransOut = true;
+		TransitionableState.skipNextTransOut = true;
 		MusicBeatState.stopMenuMusic();
 
 		plrHitsound = new FlxSound().loadEmbedded(Paths.sound("monoHitsound"));

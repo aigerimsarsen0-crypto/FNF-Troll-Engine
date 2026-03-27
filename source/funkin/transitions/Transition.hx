@@ -1,14 +1,14 @@
-package flixel.addons.transition;
+package funkin.transitions;
 
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.addons.transition.FlxTransitionSprite.TransitionStatus;
+import flixel.FlxBasic;
+import flixel.group.FlxGroup;
 
 class Transition extends FlxTypedGroup<FlxBasic>
 {
 	public var finishCallback:Void->Void;
 
 	private var _created:Bool = false;
-	private var _parentState:FlxTransitionableState = null;
+	private var _parentState:TransitionableState = null;
 
 	/**
 		Override this function to create objects that will be used in your transition.
@@ -36,4 +36,11 @@ class Transition extends FlxTypedGroup<FlxBasic>
 		if (_parentState != null && _parentState.transition == this)
 			_parentState.closeTransition();
 	}
+}
+
+enum abstract TransitionStatus(Int)
+{
+	var NULL = -1;
+	var IN = 0;
+	var OUT = 1;
 }
