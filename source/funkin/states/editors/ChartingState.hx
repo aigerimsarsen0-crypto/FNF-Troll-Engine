@@ -1127,7 +1127,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var stepperSectionBPM:CustomFlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 
+	var lastSectionLabel:FlxText;
+	var stepperCopy:CustomFlxUINumericStepper;
+
 	var sectionToCopy:Int = -1;
+
+	inline function updateLastSectionLabel()
+		lastSectionLabel.text = '(Section ${curSection - stepperCopy.value})';
 
 	inline function getEventsInRange(startTime:Float, endTime:Float):Array<PsychEventNote> {
 		return _song.events.filter(function(event:PsychEventNote) {
@@ -1293,7 +1299,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		//
 		var x:Float = x + 100 + 20;
 
-		var stepperCopy:CustomFlxUINumericStepper = null;
 		var copyLastButton:FlxUIButton = null;
 
 		copyLastButton = newFlxUIButton(x, y, "Copy last Section", function() {
@@ -1309,7 +1314,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		copyLastButton.resize(60, 30);
 		
 		stepperCopy = newFlxUINumericStepper(x, y + 40, 1, 1, -999, 999, 0);
+		stepperCopy.callback = (_, _) -> updateLastSectionLabel();
 		blockPressWhileTypingOnStepper.push(stepperCopy);
+		
+		lastSectionLabel = new FlxText(stepperCopy.x, stepperCopy.y + stepperCopy.height + 5, 0);
+		updateLastSectionLabel();
 
 		////
 		var y:Float = clearSectionButton.y + 20;
@@ -1355,6 +1364,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_section.add(clearSectionButton);
 		tab_group_section.add(check_notesSec);
 		tab_group_section.add(check_eventsSec);
+		tab_group_section.add(lastSectionLabel);
 		tab_group_section.add(stepperCopy);
 		tab_group_section.add(copyLastButton);
 		tab_group_section.add(swapSection);
@@ -3248,6 +3258,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
 		stepperSectionBPM.value = sec.changeBPM ? sec.bpm : Conductor.bpm;
+
+		updateLastSectionLabel();
 
 		updateHeads();
 	}
