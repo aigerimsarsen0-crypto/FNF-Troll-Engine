@@ -2398,6 +2398,31 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		Conductor.songPosition = lastMixPos + lastMixTimer;
 	}
 
+	override function updateSteps() {
+		var oldStep:Int = Conductor.curStep;
+		Conductor.updateSteps();
+		var curStep:Int = Conductor.curStep;
+
+		if (oldStep != curStep) {
+			if (curStep > 0) {
+				stepHit();
+				if (curStep % 4 == 0)
+					beatHit();
+			}
+
+			/*
+			if (PlayState.SONG != null) {
+				if (oldStep < curStep)
+					updateSection();
+				else
+					rollbackSection();
+			}
+			*/
+
+			tryResync();
+		}
+	}
+
 	var inputBlocked = false;
 	function checkIsTyping():Bool {
 		for (inputText in blockPressWhileTypingOn) {
