@@ -130,6 +130,22 @@ class Spork {
 				return program;
 			}
 		});
+
+		// Modified to add back _elapsedMS cause I make use of that!!! wtf!!!
+		Spoon.bend("flixel.FlxGame", macro class {
+			var _elapsedMS:Float = 0;
+			
+			function updateElapsed(deltaTime:Float):Void
+			@:privateAccess {
+				_elapsedMS = deltaTime;
+				FlxG.elapsed = FlxG.timeScale * (deltaTime / 1000.0); // variable timestep
+
+				var max = FlxG.maxElapsed * FlxG.timeScale;
+
+				if (FlxG.elapsed > max)
+					FlxG.elapsed = max;
+			}
+		});
 		#end
 	}
 }
