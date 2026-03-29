@@ -38,7 +38,7 @@
 			},
 			{
 				"name": "hxvlc",
-				"version": "2.1.4"
+				"version": "2.2.6"
 			},
 			{
 				"name": "flixel-animate",
@@ -64,7 +64,7 @@
 			},
 			{
 				"name": "linc_filedialogs",
-				"link": "https://github.com/swordcube/linc_filedialogs",
+				"link": "https://github.com/dazKind/linc_filedialogs",
 				"branch": "main"
 			}
 		]
