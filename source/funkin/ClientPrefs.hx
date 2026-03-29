@@ -35,6 +35,9 @@ class ClientPrefs {
 	public static inline final epicWindow:Float = -1;
 	#end
 
+	// rip bro
+	public static inline final sfxVolume:Float = 1;
+
 	#if !MULTICORE_LOADING
 	public static inline final multicoreLoading:Bool = false;
 	#end
