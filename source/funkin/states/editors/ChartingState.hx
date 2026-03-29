@@ -1326,7 +1326,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (copyIdx < 0) return;
 
 			////
-			copySection(curSection, copyIdx, true, true);
+			copySection(curSection, copyIdx, check_notesSec.checked, check_eventsSec.checked);
 		});
 		copyLastButton.resize(60, 30);
 		
