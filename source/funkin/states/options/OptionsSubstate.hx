@@ -447,12 +447,12 @@ class OptionsSubstate extends MusicBeatSubstate
 			case 'masterVolume':
 				if (ignoreVolumeChange) return;
 
-				var prevVol = FlxG.sound.volume;
+				var prevVol = FlxG.sound.logToLinear(FlxG.sound.volume);
 				var newVol = newVal * 0.01;
 				var snappedVol = CoolMath.snap(newVol, 0.1);
 
 				ignoreVolumeChange = true;
-				FlxG.sound.volume = newVol;
+				FlxG.sound.volume = FlxG.sound.linearToLog(newVol);
 				ignoreVolumeChange = false;
 
 				if (lastFlixelVolume != snappedVol) {
@@ -521,7 +521,7 @@ class OptionsSubstate extends MusicBeatSubstate
 
 		forceWidgetUpdate = true;
 		ignoreVolumeChange = true;
-		changeNumber("masterVolume", Math.ffloor(val * 100), true);
+		changeNumber("masterVolume", Math.ffloor(FlxG.sound.logToLinear(val) * 100), true);
 		ignoreVolumeChange = false;
 	}
 

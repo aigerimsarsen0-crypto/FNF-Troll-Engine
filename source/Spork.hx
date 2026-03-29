@@ -146,6 +146,21 @@ class Spork {
 					FlxG.elapsed = max;
 			}
 		});
+
+		// Modified to show the linear volume instead of the log value fuckklgkjdfg
+		Spoon.bend("flixel.system.ui.FlxSoundTray", macro class {
+			function showIncrement():Void
+			{
+				final volume = FlxG.sound.muted ? 0 : FlxG.sound.logToLinear(FlxG.sound.volume);
+				showAnim(volume, silent ? null : volumeUpSound);
+			}
+			
+			function showDecrement():Void
+			{
+				final volume = FlxG.sound.muted ? 0 : FlxG.sound.logToLinear(FlxG.sound.volume);
+				showAnim(volume, silent ? null : volumeDownSound);
+			}
+		});
 		#end
 	}
 }
