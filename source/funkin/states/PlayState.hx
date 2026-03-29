@@ -1619,7 +1619,7 @@ class PlayState extends MusicBeatState
 
 		songLength = inst.length;
 		inst.onComplete = function() {
-			trace("song ended!?");
+			trace("Inst onComplete");
 			finishSong(false);
 		};
 
@@ -2632,10 +2632,13 @@ class PlayState extends MusicBeatState
 		add(cutscene);
 	}
 
+	// Called after the song goes past its length
 	public function finishSong(?ignoreNoteOffset:Bool = false):Void
 	{
-		var finishCallback:Void->Void = endSongCutscenes; // In case you want to change it in a specific song.
+		if (endingSong)
+			return;
 
+		endingSong = true;
 		hud.updateTime = false;
 
 		for (track in tracks) {
@@ -2644,6 +2647,8 @@ class PlayState extends MusicBeatState
 		}
 
 		////
+		var finishCallback:Void->Void = endSongCutscenes;
+
 		if(ClientPrefs.noteOffset <= 0 || ignoreNoteOffset) {
 			finishCallback();
 		}else {
@@ -2686,8 +2691,7 @@ class PlayState extends MusicBeatState
 	public function endSong():Void
 	{
 		if (startedSong) {
-			// miss all unhit playfield notes that are within the song's length 
-			// (only within the song length because tutoriroll has a bunch of notes after the end of the song that you can't hit lol)
+			// miss all unhit playfield notes that are within the song's length
 			for (field in playfields.members) {
 				for (note in field.spawnedNotes) {
 					if (note.strumTime < songLength - ClientPrefs.hitWindow) {
@@ -2700,14 +2704,14 @@ class PlayState extends MusicBeatState
 				return;
 		}
 
+		var ret:Dynamic = callOnScripts('onEndSong');
+		if (ret == Globals.Function_Stop)
+			return;
+
 		endingSong = true;
 		canPause = false;
 		camZooming = false;
 		hud.songEnding();
-
-		var ret:Dynamic = callOnScripts('onEndSong');
-		if (endingSong || ret == Globals.Function_Stop)
-			return;
 
 		// Reset static song variables
 		seenCutscene = false;
