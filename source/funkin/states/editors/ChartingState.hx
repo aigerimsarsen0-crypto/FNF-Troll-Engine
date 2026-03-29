@@ -1782,8 +1782,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		// TODO: freeplay data shit idunno
 
 		////
-		final fileDialog = new FileDialog();
-		fileDialog.onOpen.add(function(resource) {
+		function onOpenMetadata(resource) {
 			var str:String = (resource:Bytes).toString();
 			if (str != null && str.length > 0) {
 				var data:Dynamic = Json.parse(str);
@@ -1796,10 +1795,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				modcharterInputText.text = data.modcharter;
 				extraInfoInputText.text = (data.extraInfo?.join(',') ?? "");
 			}
-		});
+		}
 
 		var loadButton = newFlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
-			fileDialog.open('json', getSongPath("metadata.json"), 'Load Metadata');
+			CoolUtil.showOpenDialog("Load Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"], onOpenMetadata);
 		});
 
 		////
@@ -1812,7 +1811,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			_song.metadata.extraInfo = extraInfoInputText.text.split(',');
 
 			var data:String = Json.stringify(_song.metadata, "\t");
-			fileDialog.save(data, 'json', getSongPath("metadata.json"), 'Save Metadata');
+			CoolUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
 		});
 
 		////
