@@ -50,18 +50,6 @@ class FlxCamera extends FlxBasic
 	 * Any `FlxCamera` with a zoom of 0 (the default value) will have this zoom value.
 	 */
 	public static var defaultZoom:Float = 1.0;
-
-	/**
-	 * Used behind-the-scenes during the draw phase so that members use the same default
-	 * cameras as their parent.
-	 * 
-	 * Prior to 4.9.0 it was useful to change this value, but that feature is deprecated.
-	 * Instead use the `defaultDrawTarget` argument in `FlxG.cameras.add `.
-	 * or`FlxG.cameras.setDefaultDrawTarget` .
-	 * @see FlxG.cameras.setDefaultDrawTarget
-	 */
-	@:deprecated("`FlxCamera.defaultCameras` is deprecated, use `FlxG.cameras.setDefaultDrawTarget` instead")
-	public static var defaultCameras(get, set):Array<FlxCamera>;
 	
 	/**
 	 * Used behind-the-scenes during the draw phase so that members use the same default
@@ -270,17 +258,6 @@ class FlxCamera extends FlxBasic
 	 */
 	public var viewMarginY(default, null):Float;
 
-	// deprecated vars
-
-	@:deprecated("use viewMarginLeft or viewMarginX")
-	var viewOffsetX(get, set):Float;
-	@:deprecated("use viewMarginTop or viewMarginY")
-	var viewOffsetY(get, set):Float;
-	@:deprecated("use viewMarginLeft or viewMarginX")
-	var viewOffsetWidth(get, never):Float;
-	@:deprecated("use viewMarginTop or viewMarginY")
-	var viewOffsetHeight(get, never):Float;
-
 	// delegates
 
 	/**
@@ -404,7 +381,7 @@ class FlxCamera extends FlxBasic
 	public var followLead(default, null):FlxPoint = FlxPoint.get();
 
 	/**
-	 * Enables or disables the filters set via `setFilters()`.
+	 * Enables or disables the filters set via the `filters` array.
 	 */
 	public var filtersEnabled:Bool = true;
 
@@ -518,9 +495,6 @@ class FlxCamera extends FlxBasic
 	 * The filters array to be applied to the camera.
 	 */
 	public var filters:Null<Array<BitmapFilter>> = null;
-
-	@:deprecated("_filters is deprecated, use filters instead")
-	var _filters(get, set):Null<Array<BitmapFilter>>;
 
 	/**
 	 * Camera's initial zoom value. Used for camera's scale handling.
@@ -1712,15 +1686,6 @@ class FlxCamera extends FlxBasic
 	}
 
 	/**
-	 * Sets the filter array to be applied to the camera.
-	 */
-	@:deprecated("setFilters() is deprecated, use the filters array instead")
-	public function setFilters(filters:Array<BitmapFilter>):Void
-	{
-		this.filters = filters;
-	}
-
-	/**
 	 * Copy the bounds, focus object, and `deadzone` info from an existing camera.
 	 *
 	 * @param   Camera  The camera you want to copy from.
@@ -1986,24 +1951,6 @@ class FlxCamera extends FlxBasic
 	/**
 	 * The size and position of this camera's margins, via `viewMarginLeft`, `viewMarginTop`, `viewWidth`
 	 * and `viewHeight`.
-	 * 
-	 * Notes: Deprecated, in 4.11.0 this was made public, but the wording is confusing.
-	 * After flixel 6.0.0 this will be changed to use `viewX`, `viewY`, `viewWidth` and `viewHeight`,
-	 * meaning, this will return the world coordinates of the camera.
-	 * @since 4.11.0
-	 */
-	@:deprecated("getViewRect is deprecated, use getViewMarginRect")
-	public function getViewRect(?rect:FlxRect)
-	{
-		if (rect == null)
-			rect = FlxRect.get();
-		
-		return rect.set(viewMarginLeft, viewMarginTop, viewWidth, viewHeight);
-	}
-	
-	/**
-	 * The size and position of this camera's margins, via `viewMarginLeft`, `viewMarginTop`, `viewWidth`
-	 * and `viewHeight`.
 	 * @since 5.2.0
 	 */
 	public function getViewMarginRect(?rect:FlxRect)
@@ -2171,12 +2118,6 @@ class FlxCamera extends FlxBasic
 		return this.visible = visible;
 	}
 
-	@:deprecated("Use calcMarginX")
-	inline function calcOffsetX():Void calcMarginX();
-
-	@:deprecated("Use calcMarginY")
-	inline function calcOffsetY():Void calcMarginY();
-	
 	inline function calcMarginX():Void
 	{
 		viewMarginX = 0.5 * width * (scaleX - initialZoom) / scaleX;
@@ -2255,48 +2196,6 @@ class FlxCamera extends FlxBasic
 	inline function get_viewBottom():Float
 	{
 		return scroll.y + viewMarginBottom;
-	}
-	
-	// deprecated vars
-
-	inline function get_viewOffsetX():Float
-	{
-		return viewMarginX;
-	}
-	
-	inline function set_viewOffsetX(value:Float):Float
-	{
-		return viewMarginX = value;
-	}
-	
-	inline function get_viewOffsetY():Float
-	{
-		return viewMarginY;
-	}
-	
-	inline function set_viewOffsetY(value:Float):Float
-	{
-		return viewMarginY = value;
-	}
-	
-	inline function get_viewOffsetWidth():Float
-	{
-		return viewMarginRight;
-	}
-	
-	inline function get_viewOffsetHeight():Float
-	{
-		return viewMarginBottom;
-	}
-
-	inline function get__filters():Array<BitmapFilter>
-	{
-		return filters;
-	}
-
-	inline function set__filters(Value:Array<BitmapFilter>):Array<BitmapFilter>
-	{
-		return filters = Value;
 	}
 	
 	/**
