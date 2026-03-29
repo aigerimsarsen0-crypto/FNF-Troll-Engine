@@ -617,7 +617,7 @@ class ClientPrefs {
 				type:Number,
 				value:#if !macro FlxG.stage != null ? FlxG.stage.application.window.displayMode.refreshRate : #end
 				60,
-				data:["suffix" => " FPS", "min" => 5, "max" => 360, "step" => 1,]
+				data:["suffix" => " FPS", "min" => 0, "max" => 360, "step" => 1,]
 			},
 			"lowQuality" => {
 				display: "Low Quality",
