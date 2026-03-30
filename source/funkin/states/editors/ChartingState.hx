@@ -207,8 +207,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var _song:SwagSong;
 
 	/* WILL BE THE CURRENT / LAST PLACED NOTE */
-	var curSelectedNote:NoteData = null;
-	var curSelectedEvent:PsychEventNote = null;
+	var curSelectedNote(default, set):NoteData = null;
+	var curSelectedEvent(default, set):PsychEventNote = null;
 	var subEventIdx:Int = 0;
 
 	/** HELD NOTE FROM CLICKING **/
@@ -2462,10 +2462,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			return;
 		}
 
-		colorSine += elapsed;
-		var sineColor:Float = 0.7 + 0.3 * Math.sin(Math.PI * colorSine);
+		var sineColor:Float = 0.7 - 0.3 * Math.cos(Math.PI * colorSine);
 		var sineColor:Int = Math.round(sineColor * 255);
-		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor, 255);
+		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
+		colorSine += elapsed;
 
 		FlxG.mouse.visible = true; //cause reasons. trust me
 
@@ -3668,7 +3668,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function selectNote(note:Note):Void
-	{		
+	{
 		if (note.column > -1) {
 			curSelectedNote = note.chartData;
 			currentNoteType = note.noteType;
@@ -3987,6 +3987,17 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		ddm.header.background.color = textBgColor;
 		ddm.header.text.color = FlxColor.WHITE;
 		return ddm;
+	}
+
+	////
+	function set_curSelectedNote(v) {
+		colorSine = 0.0;
+		return curSelectedNote = v;
+	}
+
+	function set_curSelectedEvent(v) {
+		colorSine = 0.0;
+		return curSelectedEvent = v;
 	}
 }
 
