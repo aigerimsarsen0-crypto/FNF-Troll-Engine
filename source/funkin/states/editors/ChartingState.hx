@@ -68,6 +68,10 @@ typedef ChartingStateOptions = {
 	var playSoundEvents:Bool;
 	var panHitSounds:Bool;
 	var metronome:Bool;
+	var vsliceMouseMode:Bool;
+	var bgColor1:FlxColor;
+	var bgTexture:String;
+	var bgIsCool:Bool;
 	var gridColor1:FlxColor;
 	var gridColor2:FlxColor;
 }
@@ -109,6 +113,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		playSoundEvents: false,
 		panHitSounds: false,
 		metronome: false,
+		vsliceMouseMode: false,
+		bgColor1: FlxColor.fromHSB(Std.random(64) * 5.625, 0.15, 0.15),
+		bgTexture: 'menuDesat',
+		bgIsCool: false,
 		gridColor1: 0xffe7e6e6,
 		gridColor2: 0xffd9d5d5,
 	}
@@ -165,6 +173,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		//hudSkinScript?.call("onSkinLoad");
 		return hudSkin;
 	}
+
+	var bg:FlxSprite;
 
 	var UI_box:FlxUITabMenu;
 
@@ -332,12 +342,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 	}
 
-	inline function formatTime(ms:Float) {
-		var mins = '' + Math.floor(ms / 60000);
-		var secs = '' + Math.floor((ms % 60000) / 1000);
-		return '$mins:${secs.length < 2 ? '0' + secs : secs}';
-	}
-
 	override function create()
 	{
 		instance = this;
@@ -366,11 +370,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		FlxG.camera.follow(camPos);
 
 		////
-		var bg:FlxSprite = new FlxSprite(0, 0, Paths.image('menuDesat'));
-		bg.color = FlxColor.fromHSB(Std.random(64) * 5.625, 0.15, 0.15);
+		bg = new FlxSprite();
 		bg.scrollFactor.set();
-		bg.scale.x = bg.scale.y = SpriteTools.getFillScale(bg);
-		bg.screenCenter();
+		reloadBG();
 		add(bg);
 
 		////
@@ -428,25 +430,25 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		////
 		txtGroup = new FlxTypedGroup<FlxText>();
 
-		bpmTxt = new FlxText(12, 50, 0, "", 20);
+		bpmTxt = new FlxText(12, 58, 0, "", 20);
 		bpmTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		bpmTxt.borderSize = 2;
 		bpmTxt.scrollFactor.set();
 		txtGroup.add(bpmTxt);
 
-		zoomTxt = new FlxText(10, 220, 0, "Zoom: 1 / 1", 16);
+		zoomTxt = new FlxText(10, 228, 0, 'Zoom: ${zoomList[curZoom] * 100}%', 16);
 		zoomTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		zoomTxt.borderSize = 2;
 		zoomTxt.scrollFactor.set();
 		txtGroup.add(zoomTxt);
 
-		quantTxt = new FlxText(10, 240, 0, "Beat Snap: null" , 16);
+		quantTxt = new FlxText(10, 248, 0, "Beat Snap: null" , 16);
 		quantTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		quantTxt.borderSize = 2;
 		quantTxt.scrollFactor.set();
 		txtGroup.add(quantTxt);
 
-		var tipTxt:FlxText = new FlxText(12, 300,0, "F1 - Show help", 20);
+		var tipTxt:FlxText = new FlxText(12, 308,0, "F1 - Show help", 20);
 		tipTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		tipTxt.borderSize = 2;
 		tipTxt.scrollFactor.set();
@@ -456,6 +458,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		iconDisplay = new FlxTypedGroup<FlxSprite>();
 
 		iconBG = FlxGradient.createGradientFlxSprite(1, 45 + 5 * 2, [0xFF535353, 0x00535353]);
+		iconBG.blend = ADD;
 		iconBG.scale.x = FlxG.width;
 		iconBG.updateHitbox();
 		iconBG.scrollFactor.set(0, 0);
@@ -531,7 +534,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		////
-		progressBG = FlxGradient.createGradientFlxSprite(1, GRID_SIZE, [0xFF535353, 0xFF414040]);
+		progressBG = FlxGradient.createGradientFlxSprite(1, GRID_SIZE, [0xFF474951, 0xFF37393F]);
 		progressBG.scale.x = FlxG.width;
 		progressBG.updateHitbox();
 		progressBG.scrollFactor.set(0, 0);
@@ -681,7 +684,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		addNoteUI();
 		addEventsUI();
 		addChartingUI();
-		addCustomizeUI();
+		addPreferencesUI();
 		addTracksUI();
 		
 		////
@@ -705,6 +708,26 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		_song.metadata.modcharter ??= "";
 
 		updateDiscordRPC();
+	}
+
+	function reloadBG(?key:String, ?cool:Bool):Bool {
+		key ??= options.bgTexture;
+		cool ??= options.bgIsCool;
+		var graphic = Paths.image(key, null, false);
+		if (graphic == null) return false;
+
+		if (cool) {
+			graphic = funkin.objects.CoolMenuBG.makeCoolGraphic(graphic, options.bgColor1);
+			bg.color = 0xFFFFFFFF;
+		} else {
+			bg.color = options.bgColor1;
+		}
+
+		bg.loadGraphic(graphic);
+		bg.scale.x = bg.scale.y = SpriteTools.getFillScale(bg);
+		bg.screenCenter();
+
+		return true;
 	}
 
 	function updateStrumline() {		
@@ -1105,7 +1128,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_song.add(new FlxText(skinDropdown.x, skinDropdown.y - 15, 0, 'HUD Skin:'));
 		tab_group_song.add(new FlxText(player2DropDown.x, player2DropDown.y - 15, 0, 'Opponent:'));
 		tab_group_song.add(new FlxText(gfVersionDropDown.x, gfVersionDropDown.y - 15, 0, 'Girlfriend:'));
-		tab_group_song.add(new FlxText(player1DropDown.x, player1DropDown.y - 15, 0, 'Boyfriend:'));
+		tab_group_song.add(new FlxText(player1DropDown.x, player1DropDown.y - 15, 0, 'Player:'));
 		tab_group_song.add(new FlxText(stageDropDown.x, stageDropDown.y - 15, 0, 'Stage:'));
 		
 		tab_group_song.add(new FlxText(noteSkinInputText.x, noteSkinInputText.y - 15, 0, 'Note Texture:'));
@@ -1860,45 +1883,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockScrollWhileHovering.push(trackVolumeSlider);
 
 		////////
-
+		var xPos = col2X;
 		var startY = 140;
 
-		var check_warnings = new FlxUICheckBox(10, startY, null, null, "Ignore Progress Warnings", 100);
-		check_warnings.callback = function()
-		{
-			options.ignoreWarnings = check_warnings.checked;
-		};
-		check_warnings.checked = options.ignoreWarnings;
+		var sliderHitVol = new CustomFlxUISlider(this, 'hitsoundVolume', xPos, startY, 0, 1, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
+		sliderHitVol.nameLabel.text = 'Hitsound Volume';
+		sliderHitVol.value = hitsoundVolume;
+		blockScrollWhileHovering.push(sliderHitVol);
 
-
-		var check_vortex = new FlxUICheckBox(10, startY + 30, null, null, "Vortex Editor", 100);
-		check_vortex.callback = function()
-		{
-			options.vortex = check_vortex.checked;
-		};
-		check_vortex.checked = options.vortex == true;
-
-
-		var mouseScrollingQuant = new FlxUICheckBox(10, startY + 60, null, null, "Mouse Scrolling Quantization", 100);
-		mouseScrollingQuant.callback = function()
-		{
-			options.mouseScrollingQuant = mouseScrollingQuant.checked;
-		};
-		mouseScrollingQuant.checked = options.mouseScrollingQuant == true;
-
-		var disableAutoScrolling = new FlxUICheckBox(10, startY + 90, null, null, "Disable Section Autoscroll", 120);
-		disableAutoScrolling.callback = () -> {options.noAutoScroll = disableAutoScrolling.checked;}
-		disableAutoScrolling.checked = options.noAutoScroll == true;
-
-		var sliderRate = new CustomFlxUISlider(this, 'playbackSpeed', 10, startY + 120 + 15, 0.5, 3, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
+		var sliderRate = new CustomFlxUISlider(this, 'playbackSpeed', xPos, startY + 65, 0.5, 3, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
 		sliderRate.nameLabel.text = 'Playback Rate';
 		sliderRate.value = playbackSpeed;
 		blockScrollWhileHovering.push(sliderRate);
 
 		////////
-		var xPos = col2X;
+		var xPos = col1X;
 
-		var playSoundBf = new FlxUICheckBox(xPos, startY, null, null, 'Play Hitsound (Boyfriend notes)', 100);
+		var playSoundBf = new FlxUICheckBox(xPos, startY, null, null, 'Play Hitsound (Player notes)', 100);
 		playSoundBf.callback = () -> options.playSoundBf = playSoundBf.checked;
 		playSoundBf.checked = options.playSoundBf == true;
 
@@ -1914,10 +1915,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		panHitSounds.callback = () -> options.panHitSounds = panHitSounds.checked;
 		panHitSounds.checked = options.panHitSounds == true;
 
-		var sliderHitVol = new CustomFlxUISlider(this, 'hitsoundVolume', xPos, startY + 120 + 15, 0, 1, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
-		sliderHitVol.nameLabel.text = 'Hitsound Volume';
-		sliderHitVol.value = hitsoundVolume;
-		blockScrollWhileHovering.push(sliderHitVol);
+		////
+		var yPos = startY + 120 + 30;
+
+		var check_warnings = new FlxUICheckBox(col1X, yPos, null, null, "Ignore Progress Warnings", 100);
+		check_warnings.callback = function()
+		{
+			options.ignoreWarnings = check_warnings.checked;
+		};
+		check_warnings.checked = options.ignoreWarnings;
+
+		var disableAutoScrolling = new FlxUICheckBox(col2X, yPos, null, null, "Disable Section Autoscroll", 120);
+		disableAutoScrolling.callback = () -> {options.noAutoScroll = disableAutoScrolling.checked;}
+		disableAutoScrolling.checked = options.noAutoScroll == true;
 
 		////////
 		var metronome = new FlxUICheckBox(10, 24, null, null, "Enabled", 100);
@@ -1931,18 +1941,16 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockPressWhileTypingOnStepper.push(metronomeOffsetStepper);
 
 		////
-		var customizeButton:FlxUIButton = newFlxUIButton(300 / 2, 400 - 20, 'Customize', function() {
-			UI_box.selected_tab_id = "Customize";
+		var preferencesButton:FlxUIButton = newFlxUIButton(300 / 2, 400 - 20, 'Preferences', function() {
+			UI_box.selected_tab_id = "Preferences";
 		});
-		customizeButton.x -= customizeButton.width / 2;
-		customizeButton.y -= customizeButton.height + 16;
+		preferencesButton.x -= preferencesButton.width / 2;
+		preferencesButton.y -= preferencesButton.height + 16;
 
 		////
 		tab_group_chart.add(sliderHitVol);
 		tab_group_chart.add(sliderRate);
 
-		tab_group_chart.add(mouseScrollingQuant);
-		tab_group_chart.add(check_vortex);
 		tab_group_chart.add(check_warnings);
 
 		tab_group_chart.add(playSoundEvents);
@@ -1964,14 +1972,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_chart.add(waveformTrackDropDown);
 		tab_group_chart.add(trackVolumeSlider);
 
-		tab_group_chart.add(customizeButton);
+		tab_group_chart.add(preferencesButton);
 
 		UI_box.addGroup(tab_group_chart);
 	}
 
-	function addCustomizeUI() {
+	function addPreferencesUI() {
 		var tab_group = new FlxUI(null, UI_box);
-		tab_group.name = 'Customize';
+		tab_group.name = 'Preferences';
 
 		function color1Changed(v:FlxColor) {
 			options.gridColor1 = v;
@@ -1985,10 +1993,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			saveOptions();
 		}
 
-		var changeColor1 = new ColorPicker(0, 0, "Color 1", color1Changed, options.gridColor1);
-		var changeColor2 = new ColorPicker(0, 0, "Color 2", color2Changed, options.gridColor2);
+		function bgColor1Changed(v:FlxColor) {
+			options.bgColor1 = v;
+			saveOptions();
+			reloadBG();
+		}
+
+		var changeColor1 = new ColorPicker(0, 0, "Grid Color 1", color1Changed, options.gridColor1);
+		var changeColor2 = new ColorPicker(0, 0, "Grid Color 2", color2Changed, options.gridColor2);
+
+		var bgColor1 = new ColorPicker(0, 0, "BG Color", bgColor1Changed, options.bgColor1);
 
 		var resetButt = newFlxUIButton('Reset');
+		resetButt.color = 0xFFFF0000;
 		resetButt.allowSwiping = false;
 		resetButt.onUp.callback = function() {
 			options.gridColor1 = 0xffe7e6e6;
@@ -2000,14 +2017,74 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			reloadGridLayer(false);
 		}
 
+		////
+
+		var bgTextureInput = newFlxUIInputText(0, 0, 120, options.bgTexture);
+		bgTextureInput.callback = function(text:String, action:String) {
+			if (action != "enter" && action != "focuslost")
+				return;
+
+			if (reloadBG(text)) {
+				options.bgTexture = text;
+				saveOptions();
+			}else {
+				bgTextureInput.text = options.bgTexture;
+			}
+		}
+		bgTextureInput.focusLost = () -> bgTextureInput.callback(bgTextureInput.text, "focuslost");
+		blockPressWhileTypingOn.push(bgTextureInput);
+
+		var check_coolBG = new FlxUICheckBox(0, 0, null, null, "Cool BG", 100);
+		check_coolBG.callback = function() {
+			options.bgIsCool = check_coolBG.checked;
+			reloadBG();
+		};
+		check_coolBG.checked = options.bgIsCool == true;
+
+		////
+		var check_vsliceMouseMode = new FlxUICheckBox(0, 0, null, null, "V-Slice Mouse Mode", 100);
+		check_vsliceMouseMode.callback = function() {
+			options.vsliceMouseMode = check_vsliceMouseMode.checked;
+		};
+		check_vsliceMouseMode.checked = options.vsliceMouseMode == true;
+
+
+		var check_mouseScrollingQuant = new FlxUICheckBox(0, 0, null, null, "Mouse Scrolling Quantization", 100);
+		check_mouseScrollingQuant.callback = function() {
+			options.mouseScrollingQuant = check_mouseScrollingQuant.checked;
+		};
+		check_mouseScrollingQuant.checked = options.mouseScrollingQuant == true;
+
+
+		var check_vortex = new FlxUICheckBox(0, 0, null, null, "Vortex Editor", 100);
+		check_vortex.callback = function() {
+			options.vortex = check_vortex.checked;
+		};
+		check_vortex.checked = options.vortex == true;
+
+		////
 		changeColor1.setPosition(10, 26);
 		changeColor2.setPosition(10, changeColor1.y + 20);
-		resetButt.setPosition(10, changeColor2.y + 24);
+		bgColor1.setPosition(10, changeColor2.y + 20);
+		resetButt.setPosition(10, bgColor1.y + 24);
+		bgTextureInput.setPosition(changeColor1.x + 150, changeColor1.y);
+		check_coolBG.setPosition(bgTextureInput.x, bgTextureInput.y + 20);
+		check_vsliceMouseMode.setPosition(10, resetButt.y + 40);
+		check_mouseScrollingQuant.setPosition(10, check_vsliceMouseMode.y + 30);
+		check_vortex.setPosition(10, check_mouseScrollingQuant.y + 30);
 
-		tab_group.add(new FlxText(10, changeColor1.y - 16, 'Grid color'));
+		////
+		tab_group.add(new FlxText(changeColor1.x, changeColor1.y - 16, 'Colors'));
 		tab_group.add(changeColor1);
 		tab_group.add(changeColor2);
 		tab_group.add(resetButt);
+		tab_group.add(new FlxText(bgTextureInput.x, bgTextureInput.y - 16, 'BG Texture'));
+		tab_group.add(bgTextureInput);
+		tab_group.add(check_coolBG);
+		tab_group.add(bgColor1);
+		tab_group.add(check_vsliceMouseMode);
+		tab_group.add(check_mouseScrollingQuant);
+		tab_group.add(check_vortex);
 
 		UI_box.addGroup(tab_group);
 	}
@@ -2351,7 +2428,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		curQuant = isAbs ? value : CoolUtil.updateIndex(curQuant, value, quantizations.length);
 		quantizationMult = 16 / quantizations[curQuant];
 		
-		quantTxt.text = "Beat Snap: " + quantizations[curQuant] + "th";
+		quantTxt.text = "Beat Snap: 1 / " + quantizations[curQuant];
 		quantArrowColorSwap.setHSBIntArray(ClientPrefs.quantHSV[curQuant]);
 	}
 
@@ -2467,107 +2544,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
 		colorSine += elapsed;
 
-		FlxG.mouse.visible = true; //cause reasons. trust me
-
-		var movedDummyY:Bool = false;
-		var onIcons:Bool = FlxG.mouse.overlaps(iconBG);
-		var onGrid:Bool = !onIcons && !FlxG.mouse.overlaps(progressBG)
-						&&	FlxG.mouse.x >= gridBG.x
-						&&	FlxG.mouse.x <	gridBG.x + gridBG.width
-						&&	FlxG.mouse.y >= gridBG.y
-						&&	FlxG.mouse.y <	gridBG.y + gridBG.height;
-
-		if (onIcons && FlxG.mouse.justPressed) {
-			var mhs = _song.notes[curSection].mustHitSection;
-			if (FlxG.mouse.overlaps(mhs ? rightIcon : leftIcon))
-				new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
-		}
-
-		if (onGrid){
-			dummyArrow.visible = true;
-			dummyArrow.x = Math.floor(FlxG.mouse.x / GRID_SIZE) * GRID_SIZE;
-
-			var gridMult = GRID_SIZE * quantizationMult;
-			var rawGridY = FlxG.mouse.y / gridMult;
-			var gridY = Math.floor(rawGridY);
-
-			dummyArrow.y = (FlxG.keys.pressed.SHIFT) ? FlxG.mouse.y : (gridY * gridMult);
-
-			if (FlxG.mouse.pressed){
-				movedDummyY = (curDummyY != (curDummyY = (FlxG.keys.pressed.SHIFT) ? rawGridY : gridY * quantizationMult)); // wtf
-
-				if (startDummyY == null) startDummyY = curDummyY;
-			}
-
-		}else{
-			dummyArrow.visible = false;
-
-			curDummyY = null;
-		}
-
-		if (FlxG.mouse.justPressed)
-		{
-			var clickedNote = false;
-			for (note in curRenderedNotes)
-			{
-				if (FlxG.mouse.overlaps(note))
-				{
-					clickedNote = true;
-					if (FlxG.keys.pressed.CONTROL) 
-					{
-						selectNote(note);
-					}
-					else if (FlxG.keys.pressed.ALT)
-					{
-						if (note.column > -1) {
-							curSelectedNote = note.chartData;
-							curSelectedNote.noteType = currentNoteType;
-							updateNoteUI();
-							updateGrid();
-						}
-					}
-					else
-					{
-						deleteNote(note);
-					}
-					break;
-				}
-			}
-			if (!clickedNote && onGrid) {
-				var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
-				var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
-				(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
-			}
-		}else if(FlxG.mouse.pressed){
-
-			if (movedDummyY)
-			{
-				var doUpdate:Bool = false;
-
-				for (note in heldNotesClick){
-					if (note == null) continue;
-				
-					// how much time does a grid block occupy
-					var gridTime:Float = Conductor.stepCrochet / zoomList[curZoom];
-					// time at which the mouse is standing on the grid
-					var clickTime:Float = sectionStartTime() + curDummyY * gridTime;
-					
-					var len:Float = Math.max(0, clickTime - note.strumTime);
-					note.sustainLength = FlxG.keys.pressed.SHIFT ? len : CoolMath.snap(len, gridTime);
-					doUpdate = true;
-				}
-
-				if (doUpdate) {
-					updateNoteUI();
-					updateGrid();
-				}
-			}
-
-		}else {
-			heldNotesClick.resize(0);
-			startDummyY = null;
-			curDummyY = null;
-		}
+		updateMouse(elapsed);
 
 		if (checkIsTyping() != inputBlocked) {
 			inputBlocked = !inputBlocked;
@@ -2581,14 +2558,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				if (typebox.hasFocus)
 					typebox.hasFocus = false;
 			}
-		}
-
-		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
-			var snap = Conductor.stepCrochet;
-			if (options.mouseScrollingQuant) snap *= quantizationMult;
-			Conductor.songPosition = getSnappedTime(snap) - (snap * FlxG.mouse.wheel);
-
-			pauseTracks();
 		}
 
 		////
@@ -2900,6 +2869,154 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 	}
 
+	function updateMouse(elapsed:Float) {
+		FlxG.mouse.visible = true; //cause reasons. trust me
+
+		var movedDummyY:Bool = false;
+		var onIcons:Bool = FlxG.mouse.overlaps(iconBG);
+		var onGrid:Bool = !onIcons && !FlxG.mouse.overlaps(progressBG)
+			&& FlxG.mouse.x >= gridBG.x
+			&& FlxG.mouse.x < gridBG.x + gridBG.width
+			&& FlxG.mouse.y >= gridBG.y
+			&& FlxG.mouse.y < gridBG.y + gridBG.height;
+
+		if (onIcons && FlxG.mouse.justPressed) {
+			var mhs = _song.notes[curSection].mustHitSection;
+			if (FlxG.mouse.overlaps(mhs ? rightIcon : leftIcon))
+				new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
+		}
+
+		if (onGrid){
+			dummyArrow.visible = true;
+			dummyArrow.x = Math.floor(FlxG.mouse.x / GRID_SIZE) * GRID_SIZE;
+
+			var gridMult = GRID_SIZE * quantizationMult;
+			var rawGridY = FlxG.mouse.y / gridMult;
+			var gridY = Math.floor(rawGridY);
+
+			dummyArrow.y = (FlxG.keys.pressed.SHIFT) ? FlxG.mouse.y : (gridY * gridMult);
+
+			if (FlxG.mouse.pressed){
+				movedDummyY = (curDummyY != (curDummyY = (FlxG.keys.pressed.SHIFT) ? rawGridY : gridY * quantizationMult)); // wtf
+				startDummyY ??= curDummyY;
+			}
+
+		}else{
+			dummyArrow.visible = false;
+			curDummyY = null;
+		}
+
+		if(FlxG.mouse.pressed) {
+			if (movedDummyY && heldNotesClick.length > 0) {
+				var doUpdate:Bool = false;
+
+				// how much time does a grid block occupy
+				var gridTime:Float = Conductor.stepCrochet / zoomList[curZoom];
+				// time at which the mouse is standing on the grid
+				var clickTime:Float = sectionStartTime() + curDummyY * gridTime;
+
+				for (note in heldNotesClick){
+					if (note == null) continue;
+									
+					var len:Float = Math.max(0, clickTime - note.strumTime);
+					note.sustainLength = FlxG.keys.pressed.SHIFT ? len : CoolMath.snap(len, gridTime);
+					doUpdate = true;
+				}
+
+				if (doUpdate) {
+					updateNoteUI();
+					updateGrid();
+				}
+			}
+
+		}else {
+			heldNotesClick.resize(0);
+			startDummyY = null;
+			curDummyY = null;
+		}
+
+		inline function getOverlappedNote():Note {
+			var note:Note = null;
+			for (obj in curRenderedNotes) {
+				if (FlxG.mouse.overlaps(obj)) {
+					note = obj;
+					break;
+				}
+			}
+			return note;
+		}
+
+		inline function setNoteNoteType(note:Note, noteType:String) {
+			if (note.column < 0)
+				return;
+			curSelectedNote = note.chartData;
+			curSelectedNote.noteType = noteType;
+			updateNoteUI();
+			updateGrid();
+		}
+
+		inline function gridClicked() {
+			var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
+			var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
+			(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
+		}
+
+		function vsliceModeInput() {
+			if (FlxG.mouse.justPressed) {
+				var note = getOverlappedNote();
+				if (note != null) {
+					if (FlxG.keys.pressed.ALT)
+						setNoteNoteType(note, currentNoteType);
+					else
+						selectNote(note);
+					return true;
+				}else if (onGrid) {
+					gridClicked();
+					return true;
+				}
+			}else if (FlxG.mouse.justPressedRight) {
+				var note = getOverlappedNote();
+				if (note != null) {
+					deleteNote(note);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		function classicModeInput() {
+			if (FlxG.mouse.justPressed) {
+				var note = getOverlappedNote();
+				if (note != null) {
+					if (FlxG.keys.pressed.CONTROL) 
+						selectNote(note);
+					else if (FlxG.keys.pressed.ALT)
+						setNoteNoteType(note, currentNoteType);
+					else
+						deleteNote(note);
+					return true;
+				}else if (onGrid){
+					gridClicked();
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (options.vsliceMouseMode) 
+			vsliceModeInput();
+		else
+			classicModeInput();
+
+		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
+			var snap = Conductor.stepCrochet;
+			if (options.mouseScrollingQuant) snap *= quantizationMult;
+			Conductor.songPosition = getSnappedTime(snap) - (snap * FlxG.mouse.wheel);
+
+			pauseTracks();
+		}
+	}
+
 	function openSongSelect() {
 		var ss = new SongSelectState(FlxColor.fromRGB(0,0,0,240));
 		ss.songs = SongSelectState.getEverySong();
@@ -2915,10 +3032,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function updateZoom() {
-		var daZoom:Float = zoomList[curZoom];
-		var zoomThing:String = '1 / ' + daZoom;
-		if(daZoom < 1) zoomThing = Math.round(1 / daZoom) + ' / 1';
-		zoomTxt.text = 'Zoom: ' + zoomThing;
+		zoomTxt.text = 'Zoom: ${zoomList[curZoom] * 100}%';
 		reloadGridLayer();
 	} 
 
@@ -2993,11 +3107,21 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		// beat separators
 		beatSeparators.killMembers();
+
+		var beatColor = {
+			var hsb = ClientPrefs.quantHSV[0];
+			var hue = hsb[0] % 360;
+			if (hue < 0) hue += 360;
+			var sat = (1.0 + hsb[1] / 100);
+			var brt = (1.0 + hsb[2] / 100);
+			FlxColor.fromHSB(hue, sat, brt);
+		}
+
 		var totalBeats:Float = previousSectionBeats + currentSectionBeats + nextSectionBeats;
 		for (i in 1...Math.floor(totalBeats)) {
 			var beatsep1:FlxSprite = beatSeparators.recycle();
 			if (beatsep1 == null) {
-				beatsep1 = CoolUtil.blankSprite(gridBG.width, 4, 0xFFFF0000);
+				beatsep1 = CoolUtil.blankSprite(gridBG.width, 4, beatColor);
 				beatsep1.alpha = 0.25;
 				beatSeparators.add(beatsep1);
 			}else {
@@ -3372,6 +3496,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	
 	inline function fuckFloatingPoints(n:Float):Float // haha decimals
 		return CoolMath.snap(n, Conductor.jackLimit);
+
+	inline function formatTime(ms:Float) {
+		var mins = '' + Math.floor(ms / 60000);
+		var secs = '' + Math.floor((ms % 60000) / 1000);
+		return '$mins:${secs.length < 2 ? '0' + secs : secs}';
+	}
 
 	inline function wipeGroup(group:FlxTypedGroup<Dynamic>)
 	{
