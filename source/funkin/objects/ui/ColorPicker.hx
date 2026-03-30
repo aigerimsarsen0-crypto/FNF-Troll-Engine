@@ -183,7 +183,6 @@ class ColorPickerSubstate extends FlxSubState {
 		hexInput = new FlxInputText(x, y += 20, 57);
 		hexInput.customFilterPattern = ~/[^a-fA-F0-9]*/g; // hex
 		hexInput.filterMode = 4; // CUSTOM_FILTER
-		updateHex();
 		hexInput.callback = (_, action) -> {
 			if (action == "enter")
 				hexUpdated();
@@ -271,6 +270,8 @@ class ColorPickerSubstate extends FlxSubState {
 			if (obj is FlxSprite)
 				cast(obj, FlxSprite).scrollFactor.set();
 		}
+
+		updateHex();
 	}
 
 	function rgbStepperCallback(_, action:String) {
@@ -334,6 +335,8 @@ class ColorPickerSubstate extends FlxSubState {
 	function updateHex() {
 		hexInput.text = color.toHexString(false, false);
 		prevHex = hexInput.text;
+
+		brightnessSpr.color = FlxColor.fromHSB(hStepper.value, sStepper.value / 100, 1.0);
 	}
 
 	// null=none ; false=huesat ; true=brightness
