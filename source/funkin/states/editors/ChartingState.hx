@@ -2316,8 +2316,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 				case 'note_strumTime':
 					if (curSelectedNote != null) {
-						// TODO: make an action for this
-						curSelectedNote.strumTime = nums.value;
+						new SetPropertyAction(curSelectedNote, "strumTime", nums.value);
 						updateGrid();
 						updateNoteSteps();
 					} else {
@@ -3866,7 +3865,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	@:noCompletion function pushAction(action:ChartingAction) {
 		action.redo(); // doing this first so that in the case it throws an exception it'll basically just not happen
-		trace(action);
+		//trace(action);
 
 		utIdx += 1;
 		utRay.resize(utIdx);
@@ -3879,8 +3878,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var action = utRay[nidx]; 
 		if (action == null) return;
 		action.redo();
-		trace('REDO: $action');
+		//trace('REDO: $action');
 		utIdx = nidx;
+
+		if (action.silent)
+			redo();
 	}
 
 	function undo()
@@ -3889,8 +3891,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var action = utRay[utIdx];
 		if (action == null) return;
 		action.undo();
-		trace('UNDO: $action');
+		//trace('UNDO: $action');
 		utIdx -= 1;
+
+		if (utRay[utIdx]?.silent)
+			undo();
 	}
 
 	////
@@ -4164,14 +4169,28 @@ private class HistoryDisplay extends FlxSpriteGroup {
 
 	public function updateDisplay() {
 		final utRay = ChartingState.instance.utRay;
+		final indices:Array<Int> = [];
+
+		for (i => action in utRay) {
+			if (!action.silent)
+				indices.push(i);
+		}
+
 		var half = Math.floor(txts.length / 2);
-		var offi = (utRay.length - curIdx);
+		var offi = (indices.length - curIdx);
 		var offi2 = FlxMath.maxInt(0, offi - half);
 		var scrollIdx = scrollIdx + offi2;
 
 		for (i in 1...txts.length + 1) {
-			var actionIdx = utRay.length - i - scrollIdx;
-			var action = (actionIdx < 0) ? null : utRay[actionIdx];
+			var actionIdx = indices.length - i - scrollIdx;
+			var action:ChartingAction;
+			
+			if (actionIdx >= 0 && actionIdx < indices.length) {
+				actionIdx = indices[actionIdx];
+				action = utRay[actionIdx];
+			}else {
+				action = null;
+			}
 
 			var txtIdx = txts.length - i;
 			var txt = (txtIdx < 0) ? null : txts[txtIdx];
@@ -4593,8 +4612,89 @@ private abstract class NoteAction extends ChartingAction {
 	var noteData:NoteData;
 }
 
+/** AHHHHHHHHHHHHHHH IT'S FUCKING PSYCH LUA AHHHHHHHHHHHHHHHH **/
+private class SetPropertyAction<T:Any> extends ChartingAction {
+	var object:Dynamic;
+	var fieldName:String;
+	var newValue:T;
+	var prevValue:T;
+
+	public function new(object:Dynamic, fieldName:String, newValue:T) {
+		this.object = object;
+		this.fieldName = fieldName;
+		this.newValue = newValue;
+		this.prevValue = Reflect.field(object, fieldName);
+		super();
+	}
+
+	public function redo() {
+		Reflect.setField(object, fieldName, newValue);
+	}
+
+	public function undo() {
+		Reflect.setField(object, fieldName, prevValue);
+	}
+}
+
+private class DynamicAction extends ChartingAction {
+	var doFunc:Void->Void;
+	var undoFunc:Void->Void;
+	var description:String;
+
+	public function new(doFunc:Void->Void, undoFunc:Void->Void, description:String = "Dynamic Action") {
+		this.doFunc = doFunc;
+		this.undoFunc = undoFunc;
+		this.description = description;
+		super();
+	}
+
+	public function redo() {
+		doFunc();
+	}
+
+	public function undo() {
+		undoFunc();
+	}
+
+	public function toString() {
+		return description;
+	}
+}
+
+/**
+	Groups an Array of Actions into one visible Action for the user.
+**/
+private class GroupAction extends ChartingAction {
+	final name:String;
+	
+	public function new(name:String, actions:Array<ChartingAction>) {
+		if (actions.length > 0) {
+			if (actions.length > 1) {
+				this.name = name;
+				for (action in actions)
+					action.silent = true;
+			}
+			super();
+		}
+	}
+
+	// This Action only serves as an eof type of thing lol
+	public function redo() {}
+	public function undo() {}
+
+	public function toString()
+		return name;
+}
+
 private abstract class ChartingAction
 {
+	/** 
+		Actions with `silent` set to `true` won't show up on the history display.  
+		Silent Actions shouldn't be the last done action, if the action after it is undone, this action will be undone too.
+		Similiarly, redoing a silent Action will also redo the Action after it.
+	**/
+	public var silent:Bool = false;
+	
 	/** Apply the effects of this action **/
 	abstract public function redo():Void;
 
