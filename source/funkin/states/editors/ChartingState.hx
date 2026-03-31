@@ -217,8 +217,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	var _song:SwagSong;
 
-	/* WILL BE THE CURRENT / LAST PLACED NOTE */
-	var curSelectedNote(default, set):NoteData = null;
+	var selectedNotes = new NoteSelection();
+
 	var curSelectedEvent(default, set):PsychEventNote = null;
 	var subEventIdx:Int = 0;
 
@@ -412,6 +412,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		nextRenderedSustains = new FlxTypedGroup<FlxSprite>();
 		nextRenderedNotes = new FlxTypedGroup<Note>();
 
+		selectionBoxSpr = new FlxSprite();
+		selectionBoxSpr.makeGraphic(1, 1, 0xFF87BDD9);
+		selectionBoxSpr.alpha = 0.4;
+		selectionBoxSpr.exists = false;
+
 		gridGroup.add(gridLayer);
 		gridGroup.add(waveformSprite);
 		gridGroup.add(beatSeparators);
@@ -427,6 +432,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		gridGroup.add(curRenderedNoteType);
 		gridGroup.add(nextRenderedSustains);
 		gridGroup.add(nextRenderedNotes);
+
+		gridGroup.add(selectionBoxSpr);
 
 		////
 		txtGroup = new FlxTypedGroup<FlxText>();
@@ -1433,9 +1440,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		{
 			var typeIdx = Std.parseInt(character);
 			currentNoteType = noteTypeList[typeIdx];
-			if (curSelectedNote != null) {
-				new ChangeNoteTypeAction(curSelectedNote, currentNoteType);
-			}
+			new GroupAction('Change Note Type to $currentNoteType', [
+				for (note in selectedNotes)
+					new ChangeNoteTypeAction(note, currentNoteType)
+			]);
 			if (typeIdx == 0) {
 				noteTypeInput.text = '';
 				noteTypeInput.exists = true;
@@ -1474,9 +1482,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 
 			currentNoteType = noteType;
-			if (curSelectedNote != null) {
-				new ChangeNoteTypeAction(curSelectedNote, currentNoteType);
-			}
+
+			new GroupAction('Change Note Type to $currentNoteType', [
+				for (note in selectedNotes)
+					new ChangeNoteTypeAction(note, currentNoteType)
+			]);
 		}
 		noteTypeInput.callback = (input:String, action:String) -> {
 			if (action == FlxInputText.ENTER_ACTION)
@@ -2315,8 +2325,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					}
 
 				case 'note_strumTime':
-					if (curSelectedNote != null) {
-						new SetPropertyAction(curSelectedNote, "strumTime", nums.value);
+					if (selectedNotes.length > 0) {
+						var prev = selectedNotes.strumTime;
+						new DynamicAction(() -> selectedNotes.strumTime=nums.value, () -> selectedNotes.strumTime=prev);
 						updateGrid();
 						updateNoteSteps();
 					} else {
@@ -2324,8 +2335,15 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					}
 				
 				case 'note_susLength':
-					if(curSelectedNote != null) {
-						new ChangeSustainAction(curSelectedNote, nums.value, true);
+					if (selectedNotes.length > 0) {
+						// Length can't go below 0, so if you're changing the length of multiple notes with differing initial lengths then yeah, hard to reverse.
+						new GroupAction(
+							"Change Hold Length",
+							[for (note in selectedNotes)
+								new ChangeSustainAction(note, nums.value, true)
+							]
+						);
+						
 					} else {
 						sender.value = 0;
 					}
@@ -2429,6 +2447,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var lastMetroBeat:Int = -1;
 	var metroInterval:Float = 0;
 
+	var selectionBoxSpr:FlxSprite;
+	var selectionOrigin:FlxPoint;
 	var colorSine:Float = 0;
 	//// sustain note dragging 
 	var startDummyY:Null<Float> = null;
@@ -2613,7 +2633,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		playedSound.resize(0);
 		curRenderedNotes.forEachAlive(function(note:Note) {
-			if (note.chartData == curSelectedNote || note.chartData == curSelectedEvent)
+			if (selectedNotes.contains(note.chartData) || note.chartData == curSelectedEvent)
 				note.color = sineColor;
 			else
 				note.color = 0xFFFFFFFF;
@@ -2692,11 +2712,20 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			new ChangeMustHitSectionAction(curSection, false);
 		}	
 
-		if (curSelectedNote != null) {
+		if (selectedNotes.length > 0) {
+			var change = 0;
 			if (FlxG.keys.justPressed.E)
-				new ChangeSustainAction(curSelectedNote, Conductor.stepCrochet, false);
+				change++;
 			if (FlxG.keys.justPressed.Q)
-				new ChangeSustainAction(curSelectedNote, -Conductor.stepCrochet, false);
+				change--;
+			if (change != 0) {
+				new GroupAction(
+					"Change Hold Length",
+					[for (note in selectedNotes)
+						new ChangeSustainAction(note, change * Conductor.stepCrochet, false)
+					]
+				);
+			}
 		}
 
 		if(FlxG.keys.justPressed.Z && curZoom > 0) {
@@ -2929,6 +2958,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			curDummyY = null;
 		}
 
+		var overlappedObj:Note = null;
+		var startSelectionBox:Bool = false;
+
 		inline function getOverlappedNote():Note {
 			var note:Note = null;
 			for (obj in curRenderedNotes) {
@@ -2946,7 +2978,22 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			new ChangeNoteTypeAction(note.chartData, noteType);
 		}
 
-		inline function gridClicked() {
+		inline function selectObject(obj:Note, additional:Bool = false) {
+			if (obj.column < 0) {
+				curSelectedEvent = obj.chartData;
+				subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
+				changeEventSelected();
+			}
+
+			if (additional)
+				new SelectNoteAction(obj.chartData);
+			else {
+				new SelectNotesAction([obj.chartData]);
+				startSelectionBox = true;
+			}
+		}
+
+		inline function placeGridObject() {
 			var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
 			var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
 			(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
@@ -2954,44 +3001,39 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		function vsliceModeInput() {
 			if (FlxG.mouse.justPressed) {
-				var note = getOverlappedNote();
-				if (note != null) {
-					if (FlxG.keys.pressed.ALT)
-						setNoteNoteType(note, currentNoteType);
-					else
-						selectNote(note);
-					return true;
-				}else if (onGrid) {
-					gridClicked();
-					return true;
-				}
+				if (FlxG.keys.pressed.CONTROL || FlxG.keys.pressed.ALT)
+					startSelectionBox = true;
+				else if ((overlappedObj = getOverlappedNote()) != null)
+					selectObject(overlappedObj);
+				else if (onGrid)
+					placeGridObject();
+				else if (!FlxG.mouse.overlaps(UI_box)) 
+					startSelectionBox = true;
 			}else if (FlxG.mouse.justPressedRight) {
-				var note = getOverlappedNote();
-				if (note != null) {
-					deleteNote(note);
-					return true;
-				}
+				if ((overlappedObj = getOverlappedNote()) != null)
+					deleteNote(overlappedObj);
+				else
+					new SelectNotesAction([]);
 			}
-			return false;
 		}
 
 		function classicModeInput() {
 			if (FlxG.mouse.justPressed) {
-				var note = getOverlappedNote();
-				if (note != null) {
+				if ((overlappedObj = getOverlappedNote()) != null) {
 					if (FlxG.keys.pressed.CONTROL) 
-						selectNote(note);
+						selectObject(overlappedObj, true);
 					else if (FlxG.keys.pressed.ALT)
-						setNoteNoteType(note, currentNoteType);
+						setNoteNoteType(overlappedObj, currentNoteType);
 					else
-						deleteNote(note);
-					return true;
-				}else if (onGrid){
-					gridClicked();
-					return true;
+						deleteNote(overlappedObj);
+				}
+				else if (onGrid)
+					placeGridObject();
+				else if (!FlxG.mouse.overlaps(UI_box)) {
+					//new SelectNotesAction([]);
+					startSelectionBox = true;
 				}
 			}
-			return false;
 		}
 
 		if (options.vsliceMouseMode) 
@@ -2999,6 +3041,74 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		else
 			classicModeInput();
 
+		////
+		if (startSelectionBox) {
+			var mousePos = FlxG.mouse.getWorldPosition(FlxG.camera);
+			selectionOrigin = mousePos.clone();
+		}
+
+		if (selectionOrigin == null) {
+			// No selection has been initiated
+		}
+		else if (FlxG.mouse.pressed) {
+			// Update selection boxxx
+			var mousePos = FlxG.mouse.getWorldPosition(FlxG.camera);			
+			
+			if (mousePos.x > selectionOrigin.x) {
+				selectionBoxSpr.x = selectionOrigin.x;
+				selectionBoxSpr.scale.x = mousePos.x - selectionOrigin.x;
+			}else {
+				selectionBoxSpr.x = mousePos.x;
+				selectionBoxSpr.scale.x = selectionOrigin.x - mousePos.x;
+			}
+
+			if (mousePos.y > selectionOrigin.y) {
+				selectionBoxSpr.y = selectionOrigin.y;
+				selectionBoxSpr.scale.y = mousePos.y - selectionOrigin.y;
+			}else {
+				selectionBoxSpr.y = mousePos.y;
+				selectionBoxSpr.scale.y = selectionOrigin.y - mousePos.y;
+			}
+
+			selectionBoxSpr.exists = true;
+			selectionBoxSpr.updateHitbox();
+			mousePos.put();
+
+		}else {
+			// Finish selection
+			var overlapped:Array<NoteData> = [];
+			for (obj in curRenderedNotes) {
+				if (FlxG.overlap(selectionBoxSpr, obj))
+					overlapped.push(obj.chartData);
+			}
+			
+			if (overlapped.length > 0) {
+				var list:NoteSelection;
+
+				if (FlxG.keys.pressed.CONTROL) {
+					// Add
+					list = selectedNotes.copy();
+					for (data in overlapped) list.add(data);
+				}
+				else if (FlxG.keys.pressed.ALT) {
+					// Subtract
+					list = selectedNotes.copy();
+					for (data in overlapped) list.remove(data);
+				}
+				else {
+					// Replace
+					list = new NoteSelection(overlapped);
+				}
+
+				new SelectNotesAction(list);
+			}
+
+			selectionOrigin.put();
+			selectionOrigin = null;
+			selectionBoxSpr.exists = false;
+		}
+
+		////
 		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
 			var snap = Conductor.stepCrochet;
 			if (options.mouseScrollingQuant) snap *= quantizationMult;
@@ -3404,19 +3514,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateNoteSteps():Void
 	{
-		if (curSelectedNote == null) {
+		if (selectedNotes.length == 0) {
 			labelSusLength.text = '';
 			labelStrumTime.text = '';
 			return;
 		}
 
-		var strumStep:Float = Conductor.getStep(curSelectedNote.strumTime);
+		var strumTime = selectedNotes.strumTime;
+		var strumStep:Float = Conductor.getStep(strumTime);
 		var endStep:Float = strumStep;
 		var sustainSteps:Float = 0;
 
-		if (curSelectedNote.sustainLength > 0) {
-			endStep = Conductor.getStep(curSelectedNote.strumTime + curSelectedNote.sustainLength);
-			sustainSteps = endStep - strumStep;
+		if (selectedNotes.length > 0) {
+			var endTime = selectedNotes.endTime;
+			if (endTime != strumTime) {
+				endStep = Conductor.getStep(selectedNotes.endTime);
+				sustainSteps = endStep - strumStep;
+			}
 		}
 
 		labelSusLength.text = 'Sustain Length: (${Math.round(sustainSteps)} Steps)';
@@ -3425,17 +3539,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateNoteUI():Void
 	{
-		if (curSelectedNote != null) {
+		if (selectedNotes.length > 0) {
 			updateNoteSteps();
 
-			stepperStrumTime.value = curSelectedNote.strumTime;
-			stepperSusLength.value = curSelectedNote.sustainLength;
+			stepperStrumTime.value = selectedNotes.strumTime;
+			if (selectedNotes.commonSustainLength != null)
+				stepperSusLength.value = selectedNotes.commonSustainLength;
 
-			var typeIdx = noteTypeList.indexOf(curSelectedNote.noteType);
+			var noteType = selectedNotes.noteType;
+			var typeIdx = noteType == null ? -1 : noteTypeList.indexOf(noteType);
 			if (typeIdx < 0) @:privateAccess {
 				noteTypeDropDown._selectedId = "";
 				noteTypeDropDown._selectedLabel = "";
-				noteTypeDropDown.header.text.text = curSelectedNote.noteType;
+				noteTypeDropDown.header.text.text = noteType ?? "---";
 			}else {
 				noteTypeDropDown.selectedId = Std.string(typeIdx);
 			}
@@ -3788,19 +3904,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		_song.notes.insert(idx, sec);
 	}
 
-	function selectNote(note:Note):Void
-	{
-		if (note.column > -1) {
-			curSelectedNote = note.chartData;
-			currentNoteType = note.noteType;
-			updateNoteUI();
-		}else {
-			curSelectedEvent = note.chartData;
-			subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
-			changeEventSelected();
-		}
-	}
-
 	function deleteNote(note:Note):Void
 	{
 		if (note.column > -1) {
@@ -4117,15 +4220,116 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	////
-	function set_curSelectedNote(v) {
-		colorSine = 0.0;
-		return curSelectedNote = v;
-	}
-
 	function set_curSelectedEvent(v) {
 		colorSine = 0.0;
 		return curSelectedEvent = v;
 	}
+}
+
+private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
+	public var array(get, never):Array<NoteData>;
+	
+	public var length(get, never):Int;
+
+	/**
+		Earliest strum time between selected notes.
+		Setting this will move all selected notes by the given amount of time, relative to their current position.
+	**/
+	public var strumTime(get, set):Float;
+
+	/**
+		`lastNote.strumTime + lastNote.sustainLength`
+	**/
+	public var endTime(get, never):Float;
+
+	public var commonSustainLength(get, never):Null<Float>;
+
+	/** 
+		Common note type between selected notes.  
+		If the selected notes dont have a note type in common, this will be null.  
+	**/
+	public var noteType(get, never):Null<String>;
+
+	#if true
+	public function new(?arr:Array<NoteData>) {
+		this = arr ?? [];
+		sort();
+	}
+
+	public inline function add(note:NoteData) {
+		var i:Int = 0;
+		while (i < this.length && this[i].strumTime < note.strumTime) i++;
+		this.insert(i, note);
+	}
+
+	public inline function remove(note:NoteData)
+		this.remove(note);
+
+	public inline function contains(note:NoteData):Bool
+		return this.indexOf(note) >= 0;
+
+	public inline function copy():NoteSelection
+		return cast this.copy();
+
+	public inline function iterator()
+		return this.iterator();
+
+	public inline function sort()
+		this.sort(_sort);
+	#end
+
+	#if true
+	inline function get_array():Array<NoteData>
+		return this;
+
+	inline function get_length():Int
+		return this.length;
+
+	inline function get_strumTime():Float
+		return this[0].strumTime; // ARRAY SHOULD BE SORTED BY TIME
+
+	inline function set_strumTime(v:Float):Float {
+		var delta:Float = v - this[0].strumTime;
+		for (note in this)
+			note.strumTime += delta;
+		return v;
+	}
+
+	inline function get_commonSustainLength():Null<Float> {
+		var common:Null<Float> = this[0]?.sustainLength;
+
+		for (note in this) {
+			if (note.sustainLength != common) {
+				common = null;
+				break;
+			}
+		}
+
+		return common;
+	}
+
+	inline function get_endTime():Float {
+		var lastNote = this[this.length - 1];
+		return lastNote.strumTime + lastNote.sustainLength;
+	}
+
+	inline function get_noteType():Null<String> {
+		var common:Null<String> = this[0]?.noteType;
+
+		for (note in this) {
+			if (note.noteType != common) {
+				common = null;
+				break;
+			}
+		}
+
+		return common;
+	}
+	#end
+
+	////
+	function _sort(a:NoteData, b:NoteData):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 }
 
 private class HistoryDisplay extends FlxSpriteGroup {
@@ -4521,28 +4725,85 @@ private class AddEventNoteAction extends ChartingAction {
 	}
 }
 
+private class SelectNoteAction extends NoteAction {
+	public var prevNoteType:String;
+
+	public function new(noteData:NoteData) {
+		this.noteData = noteData;
+		this.prevNoteType = instance.currentNoteType;
+		super();
+	}
+
+	public function redo() {
+		instance.selectedNotes.add(noteData);
+		instance.currentNoteType = noteData.noteType;
+		instance.colorSine = 0.0;
+		instance.updateNoteUI();
+	}
+
+	public function undo() {
+		instance.selectedNotes.remove(noteData);
+		instance.currentNoteType = prevNoteType;
+		instance.colorSine = 0.0;
+		instance.updateNoteUI();
+	}
+
+	public function toString() {
+		return 'Select Note (${noteData.column}, ${Std.int(noteData.strumTime)})';
+	}
+}
+
+private class SelectNotesAction extends ChartingAction {
+	public var list:NoteSelection;
+	public var prevSelected:NoteSelection;
+	public var prevNoteType:String;
+
+	public function new(list:Array<NoteData>) {
+		this.list = new NoteSelection(list);
+		this.prevSelected = instance.selectedNotes;
+		this.prevNoteType = instance.currentNoteType;
+		super();
+	}
+
+	public function redo() {
+		instance.selectedNotes = list;
+		instance.currentNoteType = list.noteType;
+		instance.colorSine = 0.0;
+		instance.updateNoteUI();
+	}
+
+	public function undo() {
+		instance.selectedNotes = prevSelected;
+		instance.currentNoteType = prevNoteType;
+		instance.colorSine = 0.0;
+		instance.updateNoteUI();
+	}
+
+	public function toString() {
+		return 'Select ${list.length} Notes';
+	}
+}
+
 private class RemoveNoteAction extends NoteAction {
 	public var sectionNumber:Int;
+	public var wasSelected:Bool;
 
 	public function new(sectionNumber:Int, noteData:NoteData) {
-		this.sectionNumber = sectionNumber;
 		this.noteData = noteData;
+		this.sectionNumber = sectionNumber;
+		this.wasSelected = instance.selectedNotes.contains(noteData);
 		super();
 	}
 		
 	public function redo() {
 		getSection(sectionNumber).sectionNotes.remove(noteData);
-		if (instance.curSelectedNote == noteData) {
-			instance.curSelectedNote = null;
-			instance.updateNoteUI();
-		}
+		if (wasSelected) instance.selectedNotes.remove(noteData);
 		instance.updateGrid();
 	}
 
 	public function undo() {
 		getSection(sectionNumber).sectionNotes.push(noteData);
-		instance.curSelectedNote = noteData;
-		instance.updateNoteUI();
+		if (wasSelected) instance.selectedNotes.add(noteData);
 		instance.updateGrid();
 	}
 
@@ -4554,26 +4815,36 @@ private class RemoveNoteAction extends NoteAction {
 private class AddNoteAction extends NoteAction {
 	public var sectionNumber:Int;
 
+	var newSelected:NoteSelection;
+	var previousNoteType:String;
+	var previousSelected:NoteSelection;
+
 	public function new(sectionNumber:Int, noteData:NoteData)
 	{
 		this.noteData = noteData;
 		this.sectionNumber = sectionNumber;
+		this.newSelected = new NoteSelection([noteData]);
+		this.previousSelected = instance.selectedNotes;
 		super();
 	}
 	
 	public function redo() {
 		getSection(sectionNumber).sectionNotes.push(noteData);
-		instance.curSelectedNote = noteData;
+		
+		instance.selectedNotes = newSelected;
+		instance.colorSine = 0.0;
 		instance.updateNoteUI();
+
 		instance.updateGrid();
 	}
 
 	public function undo() {
 		getSection(sectionNumber).sectionNotes.remove(noteData);
-		if (instance.curSelectedNote == noteData) {
-			instance.curSelectedNote = null;
-			instance.updateNoteUI();
-		}
+		
+		instance.selectedNotes = previousSelected;
+		instance.colorSine = 0.0;
+		instance.updateNoteUI();
+
 		instance.updateGrid();
 	}
 
