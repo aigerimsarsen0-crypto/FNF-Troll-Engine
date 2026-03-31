@@ -1434,8 +1434,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			var typeIdx = Std.parseInt(character);
 			currentNoteType = noteTypeList[typeIdx];
 			if (curSelectedNote != null) {
-				curSelectedNote.noteType = currentNoteType;
-				updateGrid();
+				new ChangeNoteTypeAction(curSelectedNote, currentNoteType);
 			}
 			if (typeIdx == 0) {
 				noteTypeInput.text = '';
@@ -1476,8 +1475,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 			currentNoteType = noteType;
 			if (curSelectedNote != null) {
-				curSelectedNote.noteType = currentNoteType;
-				updateGrid();
+				new ChangeNoteTypeAction(curSelectedNote, currentNoteType);
 			}
 		}
 		noteTypeInput.callback = (input:String, action:String) -> {
@@ -2946,10 +2944,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		inline function setNoteNoteType(note:Note, noteType:String) {
 			if (note.column < 0)
 				return;
-			curSelectedNote = note.chartData;
-			curSelectedNote.noteType = noteType;
-			updateNoteUI();
-			updateGrid();
+			new ChangeNoteTypeAction(note.chartData, noteType);
 		}
 
 		inline function gridClicked() {
@@ -4565,6 +4560,32 @@ private class AddNoteAction extends NoteAction {
 
 	public function toString() {
 		return 'Add Note (${noteData.column}, ${Math.floor(noteData.strumTime)})';
+	}
+}
+
+private class ChangeNoteTypeAction extends NoteAction {
+	public var newType:String;
+	public var prevType:String;
+
+	public function new(noteData:NoteData, newType:String) {
+		this.noteData = noteData;
+		this.newType = newType;
+		this.prevType = noteData.noteType;
+		super();
+	}
+
+	public function redo() {
+		noteData.noteType = newType;
+		instance.updateGrid();
+	}
+
+	public function undo() {
+		noteData.noteType = prevType;
+		instance.updateGrid();
+	}
+
+	public function toString() {
+		return 'Change Note Type (${noteData.column}, ${Math.floor(noteData.strumTime)}) from "$prevType" to "$newType"';
 	}
 }
 
