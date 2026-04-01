@@ -17,28 +17,13 @@ class CoolMenuBG extends FlxSpriteGroup
 	private var backdrop:FlxBackdrop;
 	private var bg:FlxSprite;
 
-	override function set_color(color:Int):Int {
-		backdrop.color = color;
-		bg.color = color;
-		return this.color = color;
-	}
-
 	public function new(simpleGraphic:FlxGraphicAsset, color:FlxColor = 0xFFFFFFFF) {
 		super();
 		this.scrollFactor.set();
 
-		var colorTransform = new ColorTransform(-1, -1, -1, 1,
-			Std.int(255 + color.red / 3),
-			Std.int(255 + color.green / 3),
-			Std.int(255 + color.blue / 3),
-			0
-		);
-
 		bg = new FlxSprite(0, 0, simpleGraphic);
-		var bitmap = bg.updateFramePixels();
-		if (bitmap != null) {
-			bg.makeGraphic(bitmap.width, bitmap.height, 0x00000000, false, 'CoolBG_bg_$color');
-			bg.graphic.bitmap.draw(bitmap, null, colorTransform, INVERT, null, true);
+		if (bg.pixels != null) {
+			bg.loadGraphic(makeCoolBitmap(bg.pixels, color), false, 0, 0, false, 'CoolBG_instance_${bg.graphic.key}_$color');
 			bg.blend = MULTIPLY;
 		}
 
@@ -74,5 +59,44 @@ class CoolMenuBG extends FlxSpriteGroup
 		add(gradient);
 		add(backdrop);
 		add(bg);
+	}
+
+	static function makeCoolBitmap(bitmap:BitmapData, color:FlxColor):BitmapData {
+		var colorTransform = new ColorTransform(-1, -1, -1, 1,
+			Std.int(255 + color.red / 3),
+			Std.int(255 + color.green / 3),
+			Std.int(255 + color.blue / 3),
+			0
+		);
+		
+		var cool = new BitmapData(bitmap.width, bitmap.height, 0x00000000);
+		try {
+			cool.draw(bitmap, null, colorTransform);
+		}catch(e) {
+			// fuck my gpu caching life	
+		}
+		return cool;
+	}
+
+	public static function makeCoolGraphic(graphic:FlxGraphic, color:FlxColor):FlxGraphic {
+		var cool = makeCoolBitmap(graphic.bitmap, color);
+		
+		var gradient = new BitmapData(cool.width, cool.height, 0x00000000);
+		for (y in 0...cool.height) {
+			var grad = (1.0 - y / cool.height);
+			var bd = FlxColor.fromRGBFloat(grad + color.redFloat * 0.5, grad + color.greenFloat * 0.5, grad + color.blueFloat * 0.5);
+			for (x in 0...cool.width) {
+				var fragColor:FlxColor = bd * cool.getPixel32(x, y);
+				gradient.setPixel32(x, y, fragColor);
+			}
+		}
+
+		return FlxGraphic.fromBitmapData(gradient, false, 'CoolBG_${graphic.key}_$color');
+	}
+
+	override function set_color(v:Int):Int {
+		backdrop.color = v;
+		bg.color = v;
+		return color = v;
 	}
 }
