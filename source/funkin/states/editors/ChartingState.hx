@@ -949,6 +949,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		{
 			showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
 		});
+		reloadSongJson.color = 0xFFFF0000;
 
 		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
 		{
@@ -2908,8 +2909,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				PlayState.chartingMode = false;
 				MusicBeatState.switchState(new funkin.states.editors.MasterEditorMenu());
 				MusicBeatState.playMenuMusic(true);
-	
-				FlxG.mouse.visible = false;
 			});
 		}
 	}
