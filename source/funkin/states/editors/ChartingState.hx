@@ -312,6 +312,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		return playbackSpeed = val;
 	}
 
+	var doUpdateGridLayer = false;
+	var doUpdateGridObjects = false;
+	var doUpdateNoteUI = false;
+
 	public function new(data:SwagSong = null) {
 		super();
 		this._song = data ?? (PlayState.SONG ??= {
@@ -894,7 +898,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			section.sectionNotes.push(note); 
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function fixEvents(){
@@ -987,7 +991,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				return;
 
 			_song.events = events;
-			updateGrid();
+			doUpdateGridObjects = true;
 		}
 
 		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
@@ -1175,7 +1179,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		if (clearNotes) {
 			_song.notes[sectionIndex].sectionNotes.resize(0);
-			updateNoteUI();
+			doUpdateNoteUI = true;
 		}
 
 		if (clearEvents) {
@@ -1191,7 +1195,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				_song.events.remove(event);
 			}
 		}
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function copySection(destIdx:Int, copyIdx:Int, copyNotes:Bool = true, copyEvents:Bool = true) {
@@ -1226,14 +1230,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		// the user can't copy to a section that isn't the current one but why not check anyway
 		if (Math.abs(curSection - destIdx) <= 1)
-			updateGrid();
+			doUpdateGridObjects = true;
 	}
 
 	function section_swapSides() {
 		for (note in _song.notes[curSection].sectionNotes)
 			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 	function section_duetNotes() {
 		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSection].sectionNotes) note.clone()];
@@ -1250,7 +1254,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		copiedNotes.resize(0);
 		copiedNotes = null;
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 	function section_mirrorNotes() {
 		for (note in _song.notes[curSection].sectionNotes)
@@ -1262,7 +1266,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			note.column = boob;
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function addSectionUI():Void
@@ -1516,7 +1520,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (curSelectedEvent != null) {
 			curSelectedEvent.subEventsData[subEventIdx][0] = typeName;
 
-			updateGrid();
+			doUpdateGridObjects = true;
 		}
 	}
 
@@ -2213,7 +2217,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		NoteAnimations.refreshKeyAnimations(_song.keyCount);
 		NoteAnimations.remap4KArray(_song.keyCount, defaultNoteColours, noteColours);
 
-		reloadGridLayer();
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 		updateStrumline();
 		adjustCamPos();
 		updateHeads();
@@ -2269,19 +2274,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'check_mustHit':
 					new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
 
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateHeads();
 				case 'check_gf':
 					_song.notes[curSection].gfSection = check.checked;
 
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateHeads();
 				case 'check_changeBPM':
 					_song.notes[curSection].bpm = stepperSectionBPM.value;
 					_song.notes[curSection].changeBPM = check.checked;
 					
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 
@@ -2298,7 +2303,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 				case 'section_beats':
 					_song.notes[curSection].sectionBeats = nums.value;
-					reloadGridLayer();
+					doUpdateGridLayer = true;
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 				
@@ -2310,7 +2316,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'song_bpm':
 					_song.bpm = nums.value;
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 
@@ -2318,7 +2324,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					if (curSelectedEvent != null) {
 						// TODO: make an action for this
 						curSelectedEvent.strumTime = nums.value;
-						updateGrid();
+						doUpdateGridObjects = true;
 						updateEventSteps();
 					} else {
 						sender.value = 0;
@@ -2328,7 +2334,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					if (selectedNotes.length > 0) {
 						var prev = selectedNotes.strumTime;
 						new DynamicAction(() -> selectedNotes.strumTime=nums.value, () -> selectedNotes.strumTime=prev);
-						updateGrid();
+						doUpdateGridObjects = true;
 						updateNoteSteps();
 					} else {
 						sender.value = 0;
@@ -2351,7 +2357,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'section_bpm':
 					_song.notes[curSection].bpm = nums.value;
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 			}
 		}
@@ -2370,13 +2376,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'event_value1':
 					if (curSelectedEvent != null) {
 						curSelectedEvent.subEventsData[subEventIdx][1] = sender.text;
-						updateGrid();
+						doUpdateGridObjects = true;
 					}
 
 				case 'event_value2':
 					if (curSelectedEvent != null) {
 						curSelectedEvent.subEventsData[subEventIdx][2] = sender.text;
-						updateGrid();
+						doUpdateGridObjects = true;
 					}
 
 				case 'metadata_songName':
@@ -2553,28 +2559,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			return;
 		}
 
-		var sineColor:Float = 0.7 - 0.3 * Math.cos(Math.PI * colorSine);
-		var sineColor:Int = Math.round(sineColor * 255);
-		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
-		colorSine += elapsed;
-
-		updateMouse(elapsed);
-
-		if (checkIsTyping() != inputBlocked) {
-			inputBlocked = !inputBlocked;
-			FNFGame.specialKeysEnabled = !inputBlocked;
-		}
-
-		if (!inputBlocked) {
-			updateKeys(elapsed);
-		}else if (FlxG.keys.justPressed.ENTER) {
-			for (typebox in blockPressWhileTypingOn) {
-				if (typebox.hasFocus)
-					typebox.hasFocus = false;
-			}
-		}
-
-		////
 		if (Conductor.playing)
 			updateSongPosition();
 
@@ -2611,15 +2595,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		updateSteps();
-		strumLineUpdateY();
-
-		if (strumLineNotes.visible = quantArrow.visible = options.vortex) {
-			var alpha = Conductor.playing ? 1 : 0.35;
-			for (receptor in strumLineNotes){
-				receptor.y = strumLine.y;
-				receptor.alpha = alpha;
-			}
-		}
 
 		bpmTxt.text =
 		"Time: " + FlxMath.roundDecimal(Conductor.songPosition / 1000, 2) + " / " + FlxMath.roundDecimal(songLength / 1000, 2) +
@@ -2630,6 +2605,53 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		'\nStep: $curStep';
 
 		progressBar.minLabel.text = formatTime(Conductor.songPosition);
+
+		////
+		if (doUpdateGridLayer) {
+			doUpdateGridLayer = false;
+			reloadGridLayer();
+		}
+		if (doUpdateGridObjects) {
+			doUpdateGridObjects = false;
+			updateGridObjects();
+		}
+		if (doUpdateNoteUI) {
+			doUpdateNoteUI = false;
+			updateNoteUI();
+		}
+
+		strumLineUpdateY();
+
+		updateMouse(elapsed);
+
+		if (checkIsTyping() != inputBlocked) {
+			inputBlocked = !inputBlocked;
+			FNFGame.specialKeysEnabled = !inputBlocked;
+		}
+
+		if (!inputBlocked) {
+			updateKeys(elapsed);
+		}else if (FlxG.keys.justPressed.ENTER) {
+			for (typebox in blockPressWhileTypingOn) {
+				if (typebox.hasFocus)
+					typebox.hasFocus = false;
+			}
+		}
+
+		////
+		if (strumLineNotes.visible = quantArrow.visible = options.vortex) {
+			var alpha = Conductor.playing ? 1 : 0.35;
+			for (receptor in strumLineNotes){
+				receptor.y = strumLine.y;
+				receptor.alpha = alpha;
+			}
+		}
+
+		////
+		var sineColor:Float = 0.7 - 0.3 * Math.cos(Math.PI * colorSine);
+		var sineColor:Int = Math.round(sineColor * 255);
+		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
+		colorSine += elapsed;
 
 		playedSound.resize(0);
 		curRenderedNotes.forEachAlive(function(note:Note) {
@@ -2697,7 +2719,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (FlxG.keys.justPressed.Q) {
 				// hudskins broke this
 				useQuantNotes = !useQuantNotes;
-				updateGrid();
+				doUpdateGridObjects = true;
 			}
 			if (FlxG.keys.justPressed.O) {
 				openSongSelect();
@@ -2799,8 +2821,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 
 				if (doUpdate) {
-					updateNoteUI();
-					updateGrid();
+					doUpdateNoteUI = true;
+					doUpdateGridObjects = true;
 				}
 			}
 
@@ -2947,8 +2969,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 
 				if (doUpdate) {
-					updateNoteUI();
-					updateGrid();
+					doUpdateNoteUI = true;
+					doUpdateGridObjects = true;
 				}
 			}
 
@@ -3134,7 +3156,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateZoom() {
 		zoomTxt.text = 'Zoom: ${zoomList[curZoom] * 100}%';
-		reloadGridLayer();
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 	} 
 
 	var currentSectionBeats:Float = 0;
@@ -3248,10 +3271,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			fieldSeparators.add(gridBlackLine);
 		}
 
-		if (updateObjects) {
+		if (updateObjects)
 			updateWaveform();
-			updateGrid();
-		}
 	}
 
 	function strumLineUpdateY()
@@ -3466,7 +3487,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function onSectionChange() {
-		reloadGridLayer();
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 		updateSectionUI();
 		eventStepperStrumTime.stepSize = Conductor.stepCrochet;
 		stepperStrumTime.stepSize = Conductor.stepCrochet;
@@ -3619,7 +3641,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var curBPMChangeIndex:Int = 0;
 
 	/** Creates the notes and event sprites from the currently visible sections **/
-	function updateGrid():Void
+	function updateGridObjects():Void
 	{
 		wipeGroup(curRenderedNotes);
 		wipeGroup(curRenderedSustains);
@@ -3923,7 +3945,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	private function addNote(strumTime:Float, column:Int, ?noteType:String, ?click:Bool):Void
@@ -4020,12 +4042,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function clearNotes() {
 		for (sec in 0..._song.notes.length)
 			_song.notes[sec].sectionNotes.resize(0);
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function clearEvents() {
 		_song.events.resize(0);
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function autosaveSong():Void
@@ -4474,7 +4496,7 @@ private class ChangeMustHitSectionAction extends ChartingAction {
 		}
 
 		instance.check_mustHitSection.checked = section.mustHitSection;
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 		instance.updateHeads();
 	}
 
@@ -4497,14 +4519,14 @@ private class ChangeSustainAction extends NoteAction {
 
 	public function redo() {
 		noteData.sustainLength += change;
-		instance.updateGrid();
-		instance.updateNoteUI();
+		instance.doUpdateGridObjects = true;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function undo() {
 		noteData.sustainLength -= change;
-		instance.updateGrid();
-		instance.updateNoteUI();
+		instance.doUpdateGridObjects = true;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function toString() {
@@ -4541,7 +4563,7 @@ private class SeparateSubEventAction extends AddEventNoteAction {
 		}
 
 		ogEventData.subEventsData.insert(subEventIdx, eventData.subEventsData[0]);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	override function toString() {
@@ -4568,7 +4590,7 @@ private class MoveSubEventAction extends ChartingAction {
 		eventData.subEventsData[swapIdx] = temp;
 
 		instance.changeEventSelected(swapIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
@@ -4577,7 +4599,7 @@ private class MoveSubEventAction extends ChartingAction {
 		eventData.subEventsData[swapIdx] = temp;
 
 		instance.changeEventSelected(subEventIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4607,7 +4629,7 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 			super.redo();
 		else {
 			instance.changeEventSelected(-1);
-			instance.updateGrid();
+			instance.doUpdateGridObjects = true;
 		}
 	}
 
@@ -4618,7 +4640,7 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 		}else {
 			eventData.subEventsData.insert(subEventIdx, subEventData);
 			instance.changeEventSelected(subEventIdx, true);
-			instance.updateGrid();
+			instance.doUpdateGridObjects = true;
 		}
 	}
 
@@ -4646,12 +4668,12 @@ private class AddNewSubEventAction extends ChartingAction {
 	public function redo() {
 		eventData.subEventsData.insert(subEventIdx, subEventData);
 		instance.changeEventSelected(subEventIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		eventData.subEventsData.remove(subEventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4669,7 +4691,7 @@ private class RemoveEventNoteAction extends ChartingAction {
 
 	public function redo() {
 		_song.events.remove(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		if (instance.curSelectedEvent == eventData) {
 			instance.subEventIdx = 0;
@@ -4680,7 +4702,7 @@ private class RemoveEventNoteAction extends ChartingAction {
 	
 	public function undo() {
 		_song.events.push(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		instance.subEventIdx = 0;
 		instance.curSelectedEvent = eventData;
@@ -4702,7 +4724,7 @@ private class AddEventNoteAction extends ChartingAction {
 
 	public function redo() {
 		_song.events.push(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		instance.subEventIdx = 0;
 		instance.curSelectedEvent = eventData;
@@ -4711,7 +4733,7 @@ private class AddEventNoteAction extends ChartingAction {
 
 	public function undo() {
 		_song.events.remove(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		if (instance.curSelectedEvent == eventData) {
 			instance.subEventIdx = 0;
@@ -4729,6 +4751,9 @@ private class SelectNoteAction extends NoteAction {
 	public var prevNoteType:String;
 
 	public function new(noteData:NoteData) {
+		if (instance.selectedNotes.contains(noteData))
+			return;
+
 		this.noteData = noteData;
 		this.prevNoteType = instance.currentNoteType;
 		super();
@@ -4738,14 +4763,14 @@ private class SelectNoteAction extends NoteAction {
 		instance.selectedNotes.add(noteData);
 		instance.currentNoteType = noteData.noteType;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function undo() {
 		instance.selectedNotes.remove(noteData);
 		instance.currentNoteType = prevNoteType;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function toString() {
@@ -4769,14 +4794,14 @@ private class SelectNotesAction extends ChartingAction {
 		instance.selectedNotes = list;
 		instance.currentNoteType = list.noteType;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function undo() {
 		instance.selectedNotes = prevSelected;
 		instance.currentNoteType = prevNoteType;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function toString() {
@@ -4798,13 +4823,13 @@ private class RemoveNoteAction extends NoteAction {
 	public function redo() {
 		getSection(sectionNumber).sectionNotes.remove(noteData);
 		if (wasSelected) instance.selectedNotes.remove(noteData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		getSection(sectionNumber).sectionNotes.push(noteData);
 		if (wasSelected) instance.selectedNotes.add(noteData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4833,9 +4858,9 @@ private class AddNoteAction extends NoteAction {
 		
 		instance.selectedNotes = newSelected;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
@@ -4843,9 +4868,9 @@ private class AddNoteAction extends NoteAction {
 		
 		instance.selectedNotes = previousSelected;
 		instance.colorSine = 0.0;
-		instance.updateNoteUI();
+		instance.doUpdateNoteUI = true;
 
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4866,12 +4891,12 @@ private class ChangeNoteTypeAction extends NoteAction {
 
 	public function redo() {
 		noteData.noteType = newType;
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		noteData.noteType = prevType;
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
