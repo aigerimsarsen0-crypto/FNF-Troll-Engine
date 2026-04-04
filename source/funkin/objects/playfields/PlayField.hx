@@ -487,6 +487,7 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 					}
 				}
 			}
+
 			// check for note deletion
 			if (daNote.garbage)
 				garbage.push(daNote);
@@ -498,17 +499,16 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 					daNote.causedMiss = true;
 					if (!daNote.ignoreNote && (daNote.tooLate || !daNote.wasGoodHit))
 						noteMissed.dispatch(daNote, this);
-				} 
+				}
 
 				if (
 					(
-						(!daNote.isSustainNote) ||
-						(daNote.sustainLength > 0 && daNote.holdingTime >= daNote.sustainLength) ||
-						(daNote.isSustainNote && daNote.strumTime - Conductor.songPosition < -350)
-					) && (
-						(daNote.sustainLength == 0 || daNote.tooLate || daNote.wasGoodHit)
-						&& daNote.strumTime - Conductor.songPosition < -(200 + judgeManager.getWindow(TIER1) + daNote.sustainLength)
+						(!daNote.isSustainNote)
+						|| (daNote.sustainLength > 0 && daNote.holdingTime >= daNote.sustainLength)
+						|| (daNote.strumTime - Conductor.songPosition < -350)
 					)
+					&& (daNote.sustainLength == 0 || daNote.tooLate || daNote.wasGoodHit)
+					&& daNote.strumTime - Conductor.songPosition < -(200 + judgeManager.getWindow(TIER1) + daNote.sustainLength)
 				)
 				{
 					daNote.garbage = true;
