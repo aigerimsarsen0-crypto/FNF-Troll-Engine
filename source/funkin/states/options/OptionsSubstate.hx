@@ -954,7 +954,7 @@ class OptionsSubstate extends MusicBeatSubstate
 					}
 				}
 
-				text.text = checkbox.toggled ? "on" : "off";
+				text.text = checkbox.toggled ? "On" : "Off";
 				text.x = object.x + 450;
 				text.y = object.y + ((object.height - text.height) / 2);
 
