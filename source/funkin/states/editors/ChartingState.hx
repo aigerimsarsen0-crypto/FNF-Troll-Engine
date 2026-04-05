@@ -2095,7 +2095,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		inline function createMusicTrack() {
 			var newTrack = new FlxSound();
-			newTrack.context = MUSIC;
 			newTrack.exists = true;
 			FlxG.sound.list.add(newTrack);
 			return newTrack;
