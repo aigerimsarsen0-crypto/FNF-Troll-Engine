@@ -917,32 +917,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function addSongUI():Void
 	{
 		var selectSongButton = newFlxUIButton(10, 20, "Select Song", openSongSelect);
-
-		var saveButton:FlxUIButton = newFlxUIButton(110, 20, "Save Chart", saveLevel);
-
-		var saveEventJson:FlxUIButton = newFlxUIButton(110, saveButton.y + 30, 'Save Events', function() {
-			if (_song.events != null && _song.events.length > 1)
-				_song.events.sort(sortEventsByTime);
-
-			var json = {"song": {"events": _song.events}}
-			var data:String = Json.stringify(json, "\t");
-			CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
-		});
-
-		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
-			var zip = new funkin.data.FuckingZip();
-			zip.addString(encodeChartJson(), getChartFileName());
-			zip.addString(Json.stringify(_song.metadata), 'metadata.json');
-
-			for (name in soundTracksMap.keys()) {
-				name += "." + Paths.SOUND_EXT;
-				var p = getSongPath(name);
-				var b = Paths.getBytes(p);
-				if (b != null) zip.addBytes(b, name);
-			}
-
-			CoolUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
-		});
+		var saveButton = newFlxUIButton(110, 20, "Save Chart", saveChartFile);
+		var saveEventJson = newFlxUIButton(110, saveButton.y + 30, 'Save Events', saveEventsFile);
+		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', saveSongZIP);
 
 		///
 		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
@@ -2722,7 +2699,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				redo();
 			}
 			if (FlxG.keys.justPressed.S) {
-				saveLevel();
+				saveChartFile();
 			}
 			if (FlxG.keys.justPressed.Q) {
 				// hudskins broke this
@@ -3870,13 +3847,37 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			return _song.song + ".json";
 	}
 
-	private function saveLevel()
+	function saveChartFile()
 	{		
 		var fileName:String = getChartFileName();
 		var data:String = encodeChartJson();
 		if (data != null && data.length > 0) {
 			CoolUtil.showSaveDialog(data.trim(), "Save Chart", getSongPath(fileName), ["JSON file", "*.json"], onSaveComplete, onSaveCancel);
 		}
+	}
+
+	function saveEventsFile() {
+		if (_song.events != null && _song.events.length > 1)
+			_song.events.sort(sortEventsByTime);
+
+		var json = {"song": {"events": _song.events}}
+		var data:String = Json.stringify(json, "\t");
+		CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
+	}
+
+	function saveSongZIP() {
+		var zip = new funkin.data.FuckingZip();
+		zip.addString(encodeChartJson(), getChartFileName());
+		zip.addString(Json.stringify(_song.metadata), 'metadata.json');
+
+		for (name in soundTracksMap.keys()) {
+			name += "." + Paths.SOUND_EXT;
+			var p = getSongPath(name);
+			var b = Paths.getBytes(p);
+			if (b != null) zip.addBytes(b, name);
+		}
+
+		CoolUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
 	}
 
 	function onSaveComplete(_):Void
