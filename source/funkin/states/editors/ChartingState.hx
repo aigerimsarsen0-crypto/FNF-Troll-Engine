@@ -903,7 +903,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (onAccept != null)
 			openSubState(new Prompt(text, 0, onAccept));
 		else
-			openSubState(new Prompt(text, 0, onAccept, null, false, "OK", "OK"));
+			openSubState(new Prompt(text, 0, onAccept, null, "OK", "OK"));
 	}
 
 	function showWarning(text:String, ?onAccept:Void->Void) {
@@ -2904,13 +2904,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			LoadingState.loadAndSwitchState(new PlayState());
 		}
 		else if (FlxG.keys.justPressed.ESCAPE) {
-			openSubState(new Prompt('Go back to the menus?\n\nUnsaved progress will be lost', 0, function() {
+			showWarning('Go back to the menus?\n\nUnsaved progress will be lost', function() {
 				PlayState.chartingMode = false;
 				MusicBeatState.switchState(new funkin.states.editors.MasterEditorMenu());
 				MusicBeatState.playMenuMusic(true);
 	
 				FlxG.mouse.visible = false;
-			}, null, options.ignoreWarnings));
+			});
 		}
 	}
 
