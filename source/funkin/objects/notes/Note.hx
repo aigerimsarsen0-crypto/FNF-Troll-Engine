@@ -628,7 +628,7 @@ class Note extends NoteObject {
 		// i thought that was interesting
 		// (aka fake notes when)
 		if (noteScript != null) {
-			var judge = note.noteScript.executeFunc("judgeNote", [this, hitDiff], this);
+			var judge = noteScript.executeFunc("judgeNote", [this, hitDiff], this);
 			if (judge != null) return judge;
 		}
 		return null;
