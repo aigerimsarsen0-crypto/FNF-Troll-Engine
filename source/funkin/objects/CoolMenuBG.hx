@@ -9,9 +9,40 @@ import flixel.group.FlxSpriteGroup;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.graphics.FlxGraphic;
 import openfl.display.BitmapData;
+import funkin.objects.shaders.CoolBGShader;
 
-// TODO: Condense this into one sprite with a shader
-class CoolMenuBG extends FlxSpriteGroup
+class CoolMenuBG extends FlxSprite {
+	public final coolShader:CoolBGShader;
+	public var isCool(default, set):Bool;
+
+	private var iTime:Array<Float> = [0.0];
+
+	public function new(simpleGraphic:FlxGraphicAsset, color:FlxColor = 0xFFFFFFFF) {
+		super(0, 0, simpleGraphic);
+		this.color = color;
+		
+		this.coolShader = new CoolBGShader();
+		this.coolShader.iTime.value = iTime;
+		this.isCool = ClientPrefs.shaders != "None";
+	}
+
+	override function update(elapsed:Float) {
+		iTime[0] += elapsed;
+		super.update(elapsed);
+	}
+
+	override function destroy() {
+		this.coolShader.iTime.value = null;
+		super.destroy();
+	}
+
+	@:noCompletion function set_isCool(v) {
+		this.shader = v ? coolShader : null;
+		return isCool = v;
+	}
+}
+
+class UnCoolMenuBG extends FlxSpriteGroup
 {
 	private var gradient:FlxSprite;
 	private var backdrop:FlxBackdrop;

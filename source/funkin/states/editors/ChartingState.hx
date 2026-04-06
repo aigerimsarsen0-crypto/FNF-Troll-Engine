@@ -18,6 +18,7 @@ import funkin.data.Song;
 
 import funkin.objects.notes.*;
 import funkin.objects.ui.CustomFlxUI;
+import funkin.objects.CoolMenuBG;
 
 import math.CoolMath;
 import math.CoolMath.floorDecimal;
@@ -174,7 +175,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		return hudSkin;
 	}
 
-	var bg:FlxSprite;
+	var bg:CoolMenuBG;
 
 	var UI_box:FlxUITabMenu;
 
@@ -370,7 +371,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		FlxG.camera.follow(camPos);
 
 		////
-		bg = new FlxSprite();
+		bg = new CoolMenuBG(null);
 		bg.scrollFactor.set();
 		reloadBG();
 		add(bg);
@@ -716,12 +717,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var graphic = Paths.image(key, null, false);
 		if (graphic == null) return false;
 
-		if (cool) {
-			graphic = funkin.objects.CoolMenuBG.makeCoolGraphic(graphic, options.bgColor1);
-			bg.color = 0xFFFFFFFF;
-		} else {
-			bg.color = options.bgColor1;
-		}
+		bg.color = options.bgColor1;
+		bg.isCool = cool;
 
 		bg.loadGraphic(graphic);
 		bg.scale.x = bg.scale.y = SpriteTools.getFillScale(bg);
