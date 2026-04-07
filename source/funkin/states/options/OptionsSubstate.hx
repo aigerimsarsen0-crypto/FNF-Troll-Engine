@@ -53,7 +53,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		"misc", 
 	];
 
-	static var tabData:Map<String, Array<Dynamic>> = [
+	static var tabLayouts:Map<String, Array<Dynamic>> = [
 		// maps are annoying and dont preserve order so i have to do this
 		"game" => [
 			[
@@ -524,6 +524,9 @@ class OptionsSubstate extends MusicBeatSubstate
 	var camFollow = new FlxPoint(0, 0);
 	var camFollowPos = new FlxObject(0, 0);
 
+	/** Tab Window **/
+	var optionMenu:FlxSprite;
+
 	var dropdown:Dropdown;
 	var openedDropdown(get, never):Widget;
 	function get_openedDropdown() return dropdown.currentWidget;
@@ -593,7 +596,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		cameras = [mainCamera];
 
 		////
-		var optionMenu = new FlxSprite(80, 80, CoolUtil.makeOutlinedGraphic(
+		optionMenu = new FlxSprite(80, 80, CoolUtil.makeOutlinedGraphic(
 			FlxMath.minInt(920, FlxG.width), 
 			FlxG.height-140, 
 			color1, 
@@ -615,8 +618,6 @@ class OptionsSubstate extends MusicBeatSubstate
 		optionCamera.follow(camFollowPos);
 
 		////
-		final backdropGraphic = Paths.image("optionsMenu/backdrop", null, false);
-		final backdropSlice = [22, 22, 89, 89];
 		final tabButtonHeight = 44;
 		final tabButtonPadding = 3;
 
@@ -643,90 +644,12 @@ class OptionsSubstate extends MusicBeatSubstate
 			tabButtons.push(button);
 		}
 
-		inline function getOptionData(opt:String):Null<OptionData>
-		{
-			return actualOptions.get(opt);
-		}
-
 		for (tabName in tabOrder)
 		{
-			////
-			var tab = new TabInstance();
+			var tab = new TabInstance(tabName, tabLayouts.get(tabName));
 			this.tabs.push(tab);
 
-			var group = tab.group;
-			var widgets = tab.widgets;
-			
-			var daY:Float = 0;
-			inline function newLabel(label:String) {
-				var text = new FlxText(8, daY, 0, Paths.getString('opt_label_$label'), 16);
-				text.applyFormat(TextFormats.OPT_LABEL);
-				text.cameras = [optionCamera];
-				group.add(text);
-
-				daY += text.height;
-			}
-			inline function newOption(opt:String) {
-					var data:OptionData = getOptionData(opt); 
-					if (data == null)
-						return;
-
-					if (data.data.get("requiresRestart"))
-						requiresRestart.set(opt, true);
-					if (data.data.get("recommendsRestart"))
-						recommendsRestart.set(opt, true);
-
-					data.data.set("optionName", opt);
-					data.display = Paths.getString('opt_display_$opt') ?? data.display;
-					data.desc = Paths.getString('opt_desc_$opt') ?? data.desc;
-
-					var text = new FlxText(16, daY, 0, data.display);
-					text.applyFormat(TextFormats.OPT_NAME);
-					text.cameras = [optionCamera];
-
-					var height = Math.max(45, text.height + 12);
-					var rect = new Rectangle(text.x - 12, text.y, optionMenu.width - text.x - 8, height);
-
-					text.y += (height - text.height) / 2;
-					
-					var drop:FlxUI9SliceSprite = new FlxUI9SliceSprite(rect.x, rect.y, backdropGraphic, rect, backdropSlice);
-					drop.alpha = 0.95;
-					drop.cameras = [optionCamera];
-					group.add(drop);
-					
-					var lock:FlxUI9SliceSprite = new FlxUI9SliceSprite(rect.x, rect.y, backdropGraphic, rect, backdropSlice);
-					lock.cameras = [optionCamera];
-					lock.alpha = 0.75;
-
-					var widget:Widget = createWidget(opt, drop, text, data);
-					widget.data.set("optionBox", drop);
-					widget.data.set("lockOverlay", lock);
-					if (widget.data.exists("objects")) {
-						var objects = widget.data.get("objects");
-						for (obj in (objects:FlxTypedGroup<FlxObject>).members) {
-							@:privateAccess
-							if (obj._cameras == null)
-								obj.cameras = [optionCamera];
-						}
-						group.add(objects);
-					}
-
-					widgets.set(text, widget);
-					group.add(text);
-					group.add(lock);
-					daY += height + 3;
-			}
-
-			////
 			newTabButton(tabName);
-			for (data in tabData.get(tabName)) {
-				newLabel(data[0]);
-				for (opt in (data[1]:Array<String>))
-					newOption(opt);
-			}
-			
-			daY += 4;
-			tab.height = daY > optionCamera.height ? daY - optionCamera.height : 0;
 		}
 
 		dropdown = new Dropdown();
@@ -751,11 +674,97 @@ class OptionsSubstate extends MusicBeatSubstate
 		add(new FlxSignalHolder(FlxG.sound.onVolumeChange, onVolumeChange));
 		onVolumeChange(FlxG.sound.volume);
 
-		checkWindows();
 		changeTab(currentTabIdx, true);
+		checkWindows();
 
 		super.create();
 		//trace('OptionState creation took ${Sys.cpuTime() - startTime} seconds.');
+	}
+
+	inline function getOptionData(opt:String):Null<OptionData>
+	{
+		return actualOptions.get(opt);
+	}
+
+	public function createTab(tab:TabInstance) {
+		if (tab.created) {
+			return;
+		}
+
+		tab.created = true;
+
+		final backdropGraphic = Paths.image("optionsMenu/backdrop", null, false);
+		final backdropSlice = [22, 22, 89, 89];
+
+		var group = tab.group;
+		group.camera = optionCamera;
+
+		var widgets = tab.widgets;
+
+		var daY:Float = 0;
+		inline function newLabel(label:String) {
+			var text = new FlxText(8, daY, 0, Paths.getString('opt_label_$label'), 16);
+			text.applyFormat(TextFormats.OPT_LABEL);
+			group.add(text);
+
+			daY += text.height;
+		}
+		inline function newOption(opt:String) {
+			var data:OptionData = getOptionData(opt); 
+			if (data == null)
+				return;
+
+			if (data.data.get("requiresRestart"))
+				requiresRestart.set(opt, true);
+			if (data.data.get("recommendsRestart"))
+				recommendsRestart.set(opt, true);
+
+			data.data.set("optionName", opt);
+			data.display = Paths.getString('opt_display_$opt') ?? data.display;
+			data.desc = Paths.getString('opt_desc_$opt') ?? data.desc;
+
+			var text = new FlxText(16, daY, 0, data.display);
+			text.applyFormat(TextFormats.OPT_NAME);
+
+			var height = Math.max(45, text.height + 12);
+			var rect = new Rectangle(text.x - 12, text.y, optionMenu.width - text.x - 8, height);
+
+			text.y += (height - text.height) / 2;
+			
+			var drop:FlxUI9SliceSprite = new FlxUI9SliceSprite(rect.x, rect.y, backdropGraphic, rect, backdropSlice);
+			drop.alpha = 0.95;
+			group.add(drop);
+			
+			var lock:FlxUI9SliceSprite = new FlxUI9SliceSprite(rect.x, rect.y, backdropGraphic, rect, backdropSlice);
+			lock.alpha = 0.75;
+
+			var widget:Widget = createWidget(opt, drop, text, data);
+			widget.data.set("optionBox", drop);
+			widget.data.set("lockOverlay", lock);
+			if (widget.data.exists("objects")) {
+				var objects = widget.data.get("objects");
+				for (obj in (objects:FlxTypedGroup<FlxObject>).members) {
+					@:privateAccess
+					if (obj._cameras == null)
+						obj.cameras = [optionCamera];
+				}
+				group.add(objects); // it'll be fine trust me
+			}
+
+			widgets.set(text, widget);
+			group.add(text);
+			group.add(lock);
+			daY += height + 3;
+		}
+
+		for (data in tab.tabData) {
+			newLabel(data[0]);
+			for (opt in (data[1]:Array<String>))
+				newOption(opt);
+		}
+
+		daY += 4;
+		tab.height = daY > optionCamera.height ? daY - optionCamera.height : 0;
 	}
 
 	function createWidget(name:String, drop:FlxSprite, text:FlxText, data:OptionData):Widget
@@ -937,6 +946,8 @@ class OptionsSubstate extends MusicBeatSubstate
 		currentWidgets = currentTab.widgets;
 		currentGroup = currentTab.group;
 		add(currentGroup);
+
+		createTab(currentTab);
 
 		camFollow = currentTab.cameraPosition;
 		camFollowPos.setPosition(camFollow.x, camFollow.y);
@@ -1773,14 +1784,22 @@ class Dropdown extends FlxTypedGroup<FlxBasic>
 }
 
 class TabInstance {
+	public var id:String;
+	public var tabData:Array<Dynamic>;
+
 	public var group:FlxTypedGroup<FlxObject>;
 	public var widgets:Map<FlxObject, Widget>;
+
+	public var created:Bool = false;
 
 	public var cameraPosition:FlxPoint;
 	public var height:Float;
 
-	public function new()
+	public function new(id:String, tabData:Array<Dynamic>)
 	{
+		this.id = id;
+		this.tabData = tabData;
+
 		group = new FlxTypedGroup<FlxObject>();
 		widgets = new Map<FlxObject, Widget>();
 
