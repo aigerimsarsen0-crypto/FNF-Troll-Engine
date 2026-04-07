@@ -222,6 +222,16 @@ class Main extends Sprite
 		}
 	}
 
+	public static inline function printCallStack()
+		print(CrashHandler.callstackToString(haxe.CallStack.callStack()));
+
+	public static inline function showCallStack(...extraInfo:Any) {
+		var css = CrashHandler.callstackToString(haxe.CallStack.callStack());
+		css += "\n" + extraInfo.toString();
+		FlxG.stage.window.alert(css, "showCallStack");
+		print(css);
+	}
+
 	#if sys
 	// https://github.com/openfl/hxp/blob/master/src/hxp/System.hx
 	public static function runProcess(command:String, ?args:Array<String>):Null<String> {
