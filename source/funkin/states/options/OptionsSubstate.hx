@@ -403,7 +403,7 @@ class OptionsSubstate extends MusicBeatSubstate
 				if ((_parentState is OptionsState) && !FlxG.keys.pressed.SHIFT)
 					LoadingState.loadAndSwitchState(new NoteOffsetState());
 				else{
-					openSubState(new ComboPositionSubstate(!optState ? 0x0 : Math.floor(0xFF * ClientPrefs.stageOpacity) * 0x1000000));
+					openSubState(new ComboPositionSubstate(inPlayState ? 0x0 : Math.floor(0xFF * ClientPrefs.stageOpacity) * 0x1000000));
 					
 					this.persistentDraw = false;
 					this.subStateClosed.addOnce((_) -> this.persistentDraw = true);
@@ -520,9 +520,9 @@ class OptionsSubstate extends MusicBeatSubstate
 
 	public var camerasToRemove:Array<FlxCamera> = [];
 
-	public var optState:Bool = false;
-	public function new(state:Bool=false){
-		optState=state;
+	public var inPlayState:Bool;
+	public function new(inPlayState:Bool = false) {
+		this.inPlayState = inPlayState;
 		super();
 	}
 
@@ -558,14 +558,11 @@ class OptionsSubstate extends MusicBeatSubstate
 		overlayCamera = new FlxCamera();
 		overlayCamera.bgColor = 0;
 		
-		if(optState){
-			FlxG.cameras.reset(mainCamera);
-			FlxG.cameras.add(optionCamera, false);
-			FlxG.cameras.add(overlayCamera, false);
-			//FlxG.cameras.setDefaultDrawTarget(mainCamera, true);
-			camerasToRemove.push(mainCamera);
+		FlxG.cameras.add(mainCamera, false);
+		FlxG.cameras.add(optionCamera, false);
+		FlxG.cameras.add(overlayCamera, false);
 
-		}else{
+		if (inPlayState) {
 			//mainCamera = FlxG.cameras.list[FlxG.cameras.list.length - 1];
 			var backdrop = new FlxSprite(whitePixel);
 			backdrop.scale.set(FlxG.width, FlxG.height);
@@ -573,12 +570,9 @@ class OptionsSubstate extends MusicBeatSubstate
 			backdrop.color = 0xFF000000;
 			backdrop.alpha = 0.6;
 			add(backdrop);
-
-			FlxG.cameras.add(mainCamera, false);
-			FlxG.cameras.add(optionCamera, false);
-			FlxG.cameras.add(overlayCamera, false);
 		}
 
+		camerasToRemove.push(mainCamera);
 		camerasToRemove.push(optionCamera);
 		camerasToRemove.push(overlayCamera);
 
@@ -1473,7 +1467,7 @@ class OptionsSubstate extends MusicBeatSubstate
 				var hovering:OptionData = curWidget.optionData;
 				var optDesc:String = hovering.desc;
 
-				if (!optState){
+				if (inPlayState){
 					var oN = hovering.data.get("optionName");
 					
 					/*if(oN == 'customizeHUD' )
@@ -1527,15 +1521,11 @@ class OptionsSubstate extends MusicBeatSubstate
 		this.close();
 	}
 
-	override function close() {
+	override function destroy()
+	{
 		for (camera in camerasToRemove)
 			FlxG.cameras.remove(camera);
 
-		super.close();
-	}
-
-	override function destroy()
-	{
 		_mousePoint.put();
 
 		for (tab in tabs)
