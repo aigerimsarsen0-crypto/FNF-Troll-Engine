@@ -260,7 +260,6 @@ class OptionsSubstate extends MusicBeatSubstate
 	var changed:Array<String> = [];
 	var originalValues:Map<String, Dynamic> = [];
 
-	public var goBack:(Array<String>)->Void;
 	public function save(){
 		ClientPrefs.save(actualOptions);
 		funkin.data.Highscore.loadData();
@@ -1515,13 +1514,17 @@ class OptionsSubstate extends MusicBeatSubstate
 
 			if (controls.BACK)
 			{
-				save();
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-			
-				if(goBack!=null)
+				if (goBack != null) {
 					goBack(changed);
+					FlxG.sound.play(Paths.sound('cancelMenu'));
+					save();
+				}
 			}
 		} 
+	}
+	
+	public dynamic function goBack(changed:Array<String>) {
+		this.close();
 	}
 
 	override function close() {
