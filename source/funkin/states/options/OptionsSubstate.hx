@@ -265,6 +265,20 @@ class OptionsSubstate extends MusicBeatSubstate
 		funkin.data.Highscore.loadData();
 	}
 	
+	inline function getOptionValue(name:String):Any {
+		return Reflect.field(ClientPrefs, name);
+	}
+
+	inline function setOptionValue(name:String, value:Any) {
+		Reflect.setField(ClientPrefs, name, value);
+	}
+
+	// this should always return true?
+	final _clientPrefFields = Type.getClassFields(ClientPrefs);
+	inline function optionExists(name:String):Bool {
+		return _clientPrefFields.contains(name);
+	}
+
 	function windowsChanged()
 	{
 		var windows = ["badWindow", "goodWindow", "sickWindow"];
@@ -629,6 +643,11 @@ class OptionsSubstate extends MusicBeatSubstate
 			tabButtons.push(button);
 		}
 
+		inline function getOptionData(opt:String):Null<OptionData>
+		{
+			return actualOptions.get(opt);
+		}
+
 		for (tabName in tabOrder)
 		{
 			////
@@ -648,10 +667,9 @@ class OptionsSubstate extends MusicBeatSubstate
 				daY += text.height;
 			}
 			inline function newOption(opt:String) {
-					if (!actualOptions.exists(opt))
+					var data:OptionData = getOptionData(opt); 
+					if (data == null)
 						return;
-
-					var data:OptionData = actualOptions.get(opt);
 
 					if (data.data.get("requiresRestart"))
 						requiresRestart.set(opt, true);
@@ -753,49 +771,80 @@ class OptionsSubstate extends MusicBeatSubstate
 		switch (widget.type)
 		{
 			case Toggle:
+				if (optionExists(name)){
+					data.value = getOptionValue(name);
+					originalValues.set(name, data.value);
+				}else {
+					data.value = (cast data.value) != false;
+				}
+
 				var checkbox = new Checkbox();
+				checkbox.toggled = data.value;
+
 				var text = new FlxText(0, 0, 0, "off", 16);
 				text.applyFormat(TextFormats.OPT_VALUE_TEXT);
-				checkbox.toggled = data.value != null ? cast data.value : false;
-
-				if (Reflect.hasField(ClientPrefs, name)){
-					checkbox.toggled = Reflect.field(ClientPrefs, name);
-					originalValues.set(name, checkbox.toggled);
-				}
 
 				widget.data.set("checkbox", checkbox);
 				widget.data.set("text", text);
 				objects.add(text);
-				objects.add(checkbox);
-
-				data.value = (checkbox.toggled);
+				objects.add(checkbox);				
 
 			case Dropdown:
-				var options:Array<String> = data.data.get("options");
-				var dV:String = cast data.value;
-				if (dV == null || options.indexOf(dV) == -1)
-					dV = options[0];
+				if (optionExists(name)) {
+					data.value = getOptionValue(name);
+					originalValues.set(name, data.value);
+				}else {
+					var options:Array<String> = data.data.get("options");
+					var val:String = cast data.value;
+					if (val == null || options.indexOf(val) == -1)
+						data.value = options[0];
+				}
 
 				var arrow:FlxSprite = new FlxSprite(Paths.image("optionsMenu/arrow"));
 				arrow.updateHitbox();
 				objects.add(arrow);
 
-				var label = new FlxText(0, 0, 0, dV, 16);
+				var label = new FlxText(0, 0, 0, data.value, 16);
 				label.applyFormat(TextFormats.OPT_VALUE_TEXT);
 				objects.add(label);
 
 				widget.data.set("arrow", arrow);
 				widget.data.set("text", label);
-				
-				if (Reflect.hasField(ClientPrefs, name)) {
-					var val = Reflect.field(ClientPrefs, name);
-					originalValues.set(name, val);
-					data.value = (val);
-					label.text = val;
-				}else
-					data.value = (dV);
 
 			case Number:
+				var min:Float = data.data.get("min");
+				var max:Float = data.data.get("max");
+				var step:Float;
+
+				if (data.data.exists("step")) {
+					step = data.data.get("step");
+				}else {
+					data.data.set("step", step = (max - min) / 100);
+				}
+
+				if (optionExists(name)) {
+					data.value = getOptionValue(name);
+					originalValues.set(name, data.value);
+					switch (data.data.get("type")) {
+						case 'percent':
+							data.value *= 100;
+						default:
+							// nothing
+					}
+				}else {
+					data.value = (cast data.value) ?? (min + max) / 2;
+				}
+
+				if (data.value < min)
+					data.value = min;
+				else if (data.value > max)
+					data.value = max;
+
+				widget.data.set("min", min);
+				widget.data.set("max", max);
+				widget.data.set("step", step);
+
+				////
 				final barBorder:Float = 8;
 
 				var box:FlxSprite = new FlxSprite(whitePixel);
@@ -849,36 +898,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				}
 				objects.add(leftAdjust);
 				objects.add(rightAdjust);
-
-				var val = data.value ? cast data.value : (data.data.get("max") + data.data.get("min")) / 2;
-
-				if (Reflect.hasField(ClientPrefs, name))
-				{
-					val = Reflect.field(ClientPrefs, name);
-					originalValues.set(name, val);
-					if (data.data.exists("type"))
-					{
-						switch (data.data.get("type"))
-						{
-							case 'percent':
-								val *= 100;
-							default:
-								// nothing
-						}
-					}
-				}
-
-				if (val < data.data.get("min"))
-					val = data.data.get("min");
-				else if (val > data.data.get("max"))
-					val = data.data.get("max");
-
-				data.value = (val);
-				widget.data.set("min", data.data.get("min"));
-				widget.data.set("max", data.data.get("max"));
-				if (!data.data.exists("step"))
-					data.data.set("step", (data.data.get("max") - data.data.get("min")) / 100);
-				widget.data.set("step", data.data.get("step"));
 
 				widget.data.set("text", text);
 				widget.data.set("box", box);
@@ -1108,11 +1127,15 @@ class OptionsSubstate extends MusicBeatSubstate
 		if (oldVal != snappedVal)
 			onNumberChanged(name, oldVal, snappedVal);
 
-		if (Reflect.hasField(ClientPrefs, name)) {
-			var val = snappedVal / (option.data.get("type") == 'percent' ? 100 : 1);
-			Reflect.setField(ClientPrefs, name, val);
-			if(Std.string(originalValues.get(name)) != Std.string(val)){
-				if (!changed.contains(name))changed.push(name);
+		if (optionExists(name)) {
+			var val = snappedVal;
+			if (option.data.get("type") == 'percent')
+				val /= 100;
+
+			setOptionValue(name, val);
+			if (Std.string(originalValues.get(name)) != Std.string(val)) {
+				if (!changed.contains(name))
+					changed.push(name);
 			}else
 				changed.remove(name);
 		}
@@ -1135,13 +1158,13 @@ class OptionsSubstate extends MusicBeatSubstate
 		if (oldVal != val)
 			onToggleChanged(name, val);
 
-		if (Reflect.hasField(ClientPrefs, name))
-			Reflect.setField(ClientPrefs, name, val);
+		if (optionExists(name))
+			setOptionValue(name, val);
 		if (originalValues.get(name) != val){
 			if (!changed.contains(name))changed.push(name);
 		}else
 			changed.remove(name);
-		// checkbox.toggled = Reflect.field(ClientPrefs, name);
+		// checkbox.toggled = getOptionValue(name);
 	}
 
 	function changeToggleW(widget:Widget, val:Bool)
@@ -1164,8 +1187,8 @@ class OptionsSubstate extends MusicBeatSubstate
 		if (oldVal != val)
 			onDropdownChanged(name, oldVal, val);
 
-		if (Reflect.hasField(ClientPrefs, name))
-			Reflect.setField(ClientPrefs, name, val);
+		if (optionExists(name))
+			setOptionValue(name, val);
 
 		if (originalValues.get(name) != val)
 			if (!changed.contains(name))changed.push(name);
