@@ -123,6 +123,7 @@
 		<haxedef name="hscriptPos"/>
 
 		<haxeflag name="--macro" value="include('funkin')" />
+		<haxeflag name="-dce" value="no" if="OFFICIAL_BUILD"/>
 	</section>
 
 	<section if="MULTICORE_LOADING debug">
