@@ -1469,7 +1469,7 @@ class OptionsSubstate extends MusicBeatSubstate
 						optDesc += "\nNOTE: This won't have any effect unless you restart the song!";
 				}
 				
-				showOptionDesc(optDesc);
+				showOptionDesc(StringTools.ltrim(optDesc));
 			}
 
 			////
