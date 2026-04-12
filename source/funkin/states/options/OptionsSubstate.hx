@@ -261,7 +261,7 @@ class OptionsSubstate extends MusicBeatSubstate
 	var originalValues:Map<String, Dynamic> = [];
 
 	public function save(){
-		ClientPrefs.save(actualOptions);
+		ClientPrefs.save();
 		funkin.data.Highscore.loadData();
 	}
 	
