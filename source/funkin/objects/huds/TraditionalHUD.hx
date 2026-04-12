@@ -32,6 +32,8 @@ class TraditionalHUD extends CommonHUD
 	var npsString = Paths.getString("nps") ?? "NPS";
 	var botplayString = Paths.getString("botplayMark") ?? "[BOTPLAY]";
 
+	var clearFlagColor:FlxColor; // don't mind me adding my trademark to the base engine -josh
+
 	var songHighscore:Int;
 	var songWifeHighscore:Float;
 
@@ -196,22 +198,67 @@ class TraditionalHUD extends CommonHUD
 
 	inline function getClearTypeText():String
 	{
+		refreshFCColour();
 		var clearType:String = ratingFC;
 
 		if (stats.accuracySystem == WIFE3 && clearType == stats.gfc)
 			clearType = stats.fc;
 		
-		return '[$clearType]';
+		return '[<fc>$clearType<fc>]';
 	}
 
 	inline function getGradeText() {
 		return '$grade';
 	}
 
+	function refreshFCColour(){
+		clearFlagColor =
+			{
+				var color:FlxColor = 0xFFA3A3A3;
+
+				if (ratingFC == stats.fail)
+				{
+					color = judgeColours.get("miss");
+				}
+				else if (comboBreaks == 0)
+				{
+					if (stats.judgements.get("bad") > 0 || stats.judgements.get("shit") > 0)
+						color = 0xFFFFFFFF;
+					else if (stats.judgements.get("good") > 0)
+					{
+						color = judgeColours.get("good");
+						if (stats.judgements.get("good") == 1)
+							color.saturation *= 0.75;
+					}
+					else if (stats.judgements.get("sick") > 0)
+					{
+						color = judgeColours.get("sick");
+						if (stats.judgements.get("sick") == 1)
+							color.saturation *= 0.75;
+					}
+					else if (stats.judgements.get("epic") > 0)
+					{
+						color = judgeColours.get("epic");
+					}
+				}
+
+				color;
+			};
+	}
+
+	var formatting:FlxTextFormat;
+	var funnyFormat:FlxTextFormatMarkerPair;
 	override function update(elapsed:Float)
 	{
 		if (isUpdating)
+		{
+			formatting = new FlxTextFormat(clearFlagColor, false, false, 0xFF000000);
+			funnyFormat = new FlxTextFormatMarkerPair(formatting, "<fc>");
+
 			scoreTxt.text = getStatusText();
+
+			scoreTxt.applyMarkup(scoreTxt.text, [funnyFormat]);
+		}
 		
 		if (judgeCounters != null) {
 			for (k => v in judgements)
