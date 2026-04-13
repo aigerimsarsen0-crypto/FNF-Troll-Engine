@@ -36,6 +36,9 @@ class TraditionalHUD extends CommonHUD
 
 	var songHighscore:Int;
 	var songWifeHighscore:Float;
+	var songHighRating:Float = 0;
+
+	var allowScoreHighlights:Bool = true; // if you don't fw the hi-score fx
 
 	var showJudgeCounter:Bool;
 	
@@ -48,6 +51,7 @@ class TraditionalHUD extends CommonHUD
 		var songRecord = Highscore.getRecord(this.songName, PlayState.difficultyName);
 		songHighscore = songRecord.score;
 		songWifeHighscore = songRecord.accuracyScore;
+		songHighRating = songRecord.rating;
 
 		showJudgeCounter = ClientPrefs.judgeCounter != "Off";
 		////
@@ -147,7 +151,7 @@ class TraditionalHUD extends CommonHUD
 		}
 	}
 
-	var shownScore:String = "0";	
+	var shownScore:String = "0";
 	var isHighscore:Bool = false;
 
 	function onScoreUpdate(){
@@ -182,7 +186,12 @@ class TraditionalHUD extends CommonHUD
 	}
 
 	inline function getScoreText():String
-		return '${isHighscore ? hiscoreString : scoreString}: $shownScore';
+	{
+		var scoreMark = isHighscore && allowScoreHighlights ? '<hi-s>' : '';
+
+		return '${isHighscore ? hiscoreString : scoreString}: $scoreMark$shownScore$scoreMark'; // this code is ugly!
+		// return '${isHighscore ? hiscoreString : scoreString}: $shownScore';
+	}
 
 	inline function getComboBreaksText():String
 		return '$cbString: $comboBreaks';
@@ -190,10 +199,15 @@ class TraditionalHUD extends CommonHUD
 	inline function getNPSText():String
 		return '$npsString: $nps / $npsPeak';
 
+	var isHighRating:Bool = false;
+
 	inline function getRatingText():String
 	{
+		isHighRating = (songWifeHighscore != 0 && stats.totalNotesHit > songWifeHighscore && stats.ratingPercent > songHighRating);
+
+		var ratingMark = isHighRating && allowScoreHighlights ? '<hi-s>' : '';
 		final ratPerc:Float = CoolMath.floorDecimal(ratingPercent * 100, 2);
-		return '$ratPerc%';
+		return '$ratingMark$ratPerc%$ratingMark';
 	}
 
 	inline function getClearTypeText():String
@@ -248,16 +262,24 @@ class TraditionalHUD extends CommonHUD
 
 	var formatting:FlxTextFormat;
 	var funnyFormat:FlxTextFormatMarkerPair;
+
+	var scoreFormatting:FlxTextFormat;
+	var lessFunnyFormat:FlxTextFormatMarkerPair;
 	override function update(elapsed:Float)
 	{
 		if (isUpdating)
 		{
+			// fc markup, obv
 			formatting = new FlxTextFormat(clearFlagColor, false, false, 0xFF000000);
 			funnyFormat = new FlxTextFormatMarkerPair(formatting, "<fc>");
 
+			// hi-score markups, obv
+			scoreFormatting = new FlxTextFormat(0xFFF7E92C, false, false, 0xFF000000);
+			lessFunnyFormat = new FlxTextFormatMarkerPair(scoreFormatting, "<hi-s>");
+
 			scoreTxt.text = getStatusText();
 
-			scoreTxt.applyMarkup(scoreTxt.text, [funnyFormat]);
+			scoreTxt.applyMarkup(scoreTxt.text, [funnyFormat, lessFunnyFormat]);
 		}
 		
 		if (judgeCounters != null) {
