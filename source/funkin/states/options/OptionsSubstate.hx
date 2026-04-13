@@ -147,20 +147,36 @@ class OptionsSubstate extends MusicBeatSubstate
 			]
 		],
 		"video" => [
-			["video", ["shaders", "fpsBG"]],
-			["display", ["framerate", #if FUNNY_ALLOWED "bread", "fish" #end]],
+			[
+				"display",
+				[
+					"framerate",
+					"fullscreen", 
+				]
+			],
 			[
 				"performance",
 				[
-					"lowQuality",
 					"globalAntialiasing",
-					"cacheOnGPU",
-					"multicoreLoading",
+					"lowQuality",
+					"shaders",
 					"optimizeHolds",
 					"holdSubdivs",
-					"drawDistanceModifier" // apparently i forgot to add this in the new options thing lmao
+					"drawDistanceModifier", // apparently i forgot to add this in the new options thing lmao
+					"cacheOnGPU",
+					"multicoreLoading",
 				]
-			]
+			],
+			[
+				"video",
+				[
+					"fpsBG",
+					#if FUNNY_ALLOWED
+					"bread",
+					"fish",
+					#end
+				]
+			],
 		],
 		"controls" => [
 			[
