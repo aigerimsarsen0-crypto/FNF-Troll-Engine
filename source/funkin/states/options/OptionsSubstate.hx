@@ -1601,7 +1601,7 @@ class Dropdown extends FlxTypedGroup<FlxBasic>
 	var labels(get, never):Array<FlxText>;
 	function get_labels() return labelGrp.members;
 
-	private var backdropGraphic = Paths.image("optionsMenu/backdrop");
+	private var backdropGraphic = Paths.image("optionsMenu/backdrop", null, false);
 	private var backdropSlice = [22, 22, 89, 89];
 
 	public function new() {
