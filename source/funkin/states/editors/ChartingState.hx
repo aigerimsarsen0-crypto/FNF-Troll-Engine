@@ -2753,6 +2753,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					]
 				);
 			}
+
+			if (FlxG.keys.justPressed.DELETE) {
+				new GroupAction(
+					"Remove Notes",
+					[for (note in selectedNotes.copy()) new RemoveNoteAction(curSection, note)]
+				);
+			}
 		}
 
 		if(FlxG.keys.justPressed.Z && curZoom > 0) {
