@@ -112,16 +112,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				]
 			],
 			[
-				"info_displays",
-				[
-					"hitbar", 
-					"showMS", 
-					"judgeCounter",
-					"botplayMarker",
-					"npsDisplay"
-				]
-			],
-			[
 				"hud",
 				[
 					"timeBarType", 
@@ -135,6 +125,16 @@ class OptionsSubstate extends MusicBeatSubstate
 					"simpleJudge",
 					'hudPosition', 
 					"customizeHUD",
+				]
+			],
+			[
+				"info_displays",
+				[
+					"hitbar", 
+					"showMS", 
+					"judgeCounter",
+					"botplayMarker",
+					"npsDisplay"
 				]
 			],
 			[
