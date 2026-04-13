@@ -6,7 +6,7 @@
 
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Friday Night Funkin': Troll Engine" file="Trolled" packageName="com.sowy.trollengine"
+	<app title="Friday Night Funkin': Troll Engine" file="Friday Night Funkin" packageName="com.sowy.trollengine"
 		package="com.sowy.trollengine" main="Main" version="0.2.8" company="Sowy" />
 
 	<set if="switch" name="APP_ID" value="0x0100f6c013bbc000"/>
