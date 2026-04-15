@@ -784,13 +784,20 @@ class OptionsSubstate extends MusicBeatSubstate
 				var checkbox = new Checkbox();
 				checkbox.toggled = data.value;
 
-				var text = new FlxText(0, 0, 0, "off", 16);
-				text.applyFormat(TextFormats.OPT_VALUE_TEXT);
+				var label = new FlxText(0, 0, 0, "off", 16);
+				label.applyFormat(TextFormats.OPT_VALUE_TEXT);
 
 				widget.data.set("checkbox", checkbox);
-				widget.data.set("text", text);
-				objects.add(text);
+				widget.data.set("text", label);
+				objects.add(label);
 				objects.add(checkbox);				
+
+				////
+				label.x = text.x + 450;
+				label.y = text.y + ((text.height - label.height) / 2);
+
+				checkbox.x = text.x + 800;
+				checkbox.y = text.y + ((text.height - checkbox.height) / 2);
 
 			case Dropdown:
 				if (optionExists(name)) {
@@ -813,6 +820,13 @@ class OptionsSubstate extends MusicBeatSubstate
 
 				widget.data.set("arrow", arrow);
 				widget.data.set("text", label);
+
+				////
+				arrow.x = text.x + 800;
+				arrow.y = text.y + ((text.height - arrow.height) / 2);
+
+				label.x = text.x + 450;
+				label.y = text.y + ((text.height - label.height) / 2);
 
 			case Number:
 				var min:Float = data.data.get("min");
@@ -862,9 +876,9 @@ class OptionsSubstate extends MusicBeatSubstate
 				objects.add(box);
 				objects.add(bar);
 
-				var text = new FlxText(0, 0, 0, "off", 16);
-				text.applyFormat(TextFormats.OPT_VALUE_TEXT);
-				objects.add(text);
+				var label = new FlxText(0, 0, 0, "off", 16);
+				label.applyFormat(TextFormats.OPT_VALUE_TEXT);
+				objects.add(label);
 
 				var leftAdjust = new WidgetButton();
 				var adjusters: FlxGraphic = Paths.image("optionsMenu/adjusters");
@@ -875,8 +889,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				leftAdjust.updateHitbox();
 				leftAdjust.canRepeat = true;
 				leftAdjust.repeatTime = 0.05;
-				leftAdjust.track = box;
-				leftAdjust.trackOffset.x = -leftAdjust.width - 5;
 
 				var rightAdjust = new WidgetButton();
 				rightAdjust.loadGraphic(adjusters, true, Math.floor(adjusters.width / 2), adjusters.height);
@@ -885,8 +897,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				rightAdjust.updateHitbox();
 				rightAdjust.canRepeat = true;
 				rightAdjust.repeatTime = 0.05;
-				rightAdjust.track = box;
-				rightAdjust.trackOffset.x = box.width + 5;
 
 				leftAdjust.onPressed = function()
 				{
@@ -902,11 +912,23 @@ class OptionsSubstate extends MusicBeatSubstate
 				objects.add(leftAdjust);
 				objects.add(rightAdjust);
 
-				widget.data.set("text", text);
+				widget.data.set("text", label);
 				widget.data.set("box", box);
 				widget.data.set("bar", bar);
 				widget.data.set("leftAdjust", leftAdjust);
 				widget.data.set("rightAdjust", rightAdjust);
+
+				////
+				box.x = text.x + 600;
+				box.y = text.y + ((text.height - bar.height) / 2);
+
+				leftAdjust.setTracking(box, -leftAdjust.width - 5);
+				leftAdjust.updateTracking();
+				leftAdjust.track = null;
+								
+				rightAdjust.setTracking(box, box.width + 5);
+				rightAdjust.updateTracking();
+				rightAdjust.track = null;
 
 			case Button:
 				// nothing needs to be made lol
@@ -988,11 +1010,7 @@ class OptionsSubstate extends MusicBeatSubstate
 				}
 
 				text.text = checkbox.toggled ? "On" : "Off";
-				text.x = object.x + 450;
-				text.y = object.y + ((object.height - text.height) / 2);
 
-				checkbox.x = object.x + 800;
-				checkbox.y = object.y + ((object.height - checkbox.height) / 2);
 			case Dropdown:
 				var arrow:FlxSprite = widget.data.get("arrow");
 				var label:FlxText = widget.data.get("text");
@@ -1041,12 +1059,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				var active = openedDropdown == widget;
 				arrow.angle = active ? -90 : 0;
 
-				arrow.x = object.x + 800;
-				arrow.y = object.y + ((object.height - arrow.height) / 2);
-
-				label.x = object.x + 450;
-				label.y = object.y + ((object.height - label.height) / 2);
-
 			case Number:
 				final barBorder:Float = 8;
 				final barWidth:Float = 240 - barBorder;
@@ -1081,9 +1093,6 @@ class OptionsSubstate extends MusicBeatSubstate
 
 				bar.scale.x = (box.width - barBorder) * (value - min) / (max - min);
 				bar.updateHitbox();
-
-				box.x = object.x + 600;
-				box.y = object.y + ((object.height - bar.height) / 2);
 
 				text.text = '';
 				if (widget.optionData.data.exists("prefix"))
