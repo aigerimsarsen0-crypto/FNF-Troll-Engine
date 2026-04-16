@@ -34,11 +34,6 @@ class CreditsState extends MusicBeatState
 	public dynamic function goBack()
 		MusicBeatState.switchState(new MainMenuState());
 
-	override function startOutro(onOutroFinished:()->Void){
-		persistentUpdate = false;
-		return onOutroFinished();
-	}
-
 	public function new(?options:Array<CreditsOption>) {
 		super();
 
