@@ -499,7 +499,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		}
 	}
 
-	var forceWidgetUpdate:Bool = false;
+	var forceWidgetUpdate:Bool = true;
 
 	var currentTabIdx:Int = 0;
 	var currentTab:TabInstance;
