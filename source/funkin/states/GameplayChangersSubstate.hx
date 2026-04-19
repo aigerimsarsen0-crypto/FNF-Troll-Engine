@@ -83,25 +83,13 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		option.displayFormat = '%vX';
 		optionsArray.push(option);
 
-		var option = new BoolGameplayOption('instakill', false);
-		optionsArray.push(option);
-
-		var option = new BoolGameplayOption('practice', false);
-		optionsArray.push(option);
-
-		var option = new BoolGameplayOption('perfect', false);
-		optionsArray.push(option);
-
 		var option = new BoolGameplayOption('instaRespawn', false);
 		optionsArray.push(option);
 
-		var option = new BoolGameplayOption('botplay', false);
+		var option = new BoolGameplayOption('instakill', false);
 		optionsArray.push(option);
 
 		var option = new BoolGameplayOption('opponentPlay', false);
-		optionsArray.push(option);
-
-		var option = new BoolGameplayOption('disableModcharts', false);
 		optionsArray.push(option);
 
 		var option = new BoolGameplayOption('holdsgivehp', false);
@@ -109,13 +97,23 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 		var option = new BoolGameplayOption('noDropPenalty', false);
 		optionsArray.push(option);
+
+		var option = new BoolGameplayOption('disableModcharts', false);
+		optionsArray.push(option);
+
+		var option = new BoolGameplayOption('perfect', false);
+		optionsArray.push(option);
+
+		var option = new BoolGameplayOption('practice', false);
+		optionsArray.push(option);
+
+		var option = new BoolGameplayOption('botplay', false);
+		optionsArray.push(option);
 	}
 
 	override public function create() {
 		super.create();
 
-		this.camera = FlxG.cameras.list[FlxG.cameras.list.length - 1];
-		
 		var bg:FlxSprite = CoolUtil.blankSprite(FlxG.width, FlxG.height, FlxColor.BLACK);
 		bg.screenCenter();
 		bg.scrollFactor.set();
