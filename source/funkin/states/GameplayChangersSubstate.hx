@@ -121,7 +121,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		add(bg);
 		
 		menu = new AlphabetMenu();
-		menu.textSize = 0.8;
+		menu.textSize = 0.75;
 		menu.controls = controls;
 		menu.cameras = cameras;
 		menu.callbacks.onSelect = (idx, item) -> {
@@ -184,7 +184,6 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		{
 			var optionLabel = menu.addTextOption(option.displayName, null);
 			optionLabel.scrollFactor.set();
-			optionLabel.xAdd = 120;
 			optionLabel.x += 200;
 			optionLabel.y = optionLabel.targetY - FlxG.height / 3;
 			///
@@ -200,6 +199,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 					checkbox.scrollFactor.set();
 					checkbox.sprTracker = optionLabel;
 					checkbox.offsetY = -60;
+					checkbox.scale.set(0.75, 0.75);
 					checkboxGroup.cameras = cameras;
 					checkboxGroup.add(checkbox);
 
@@ -207,7 +207,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 					option.updateDisplay();
 
 				default:
-					var valueText:AttachedText = new AttachedText('' + option.getValue(), optionLabel.width + 80, true, 0.8);
+					var valueText:AttachedText = new AttachedText('' + option.getValue(), optionLabel.width + 80, true, 0.75);
 					valueText.ID = i;
 					valueText.scrollFactor.set();
 					valueText.sprTracker = optionLabel;
