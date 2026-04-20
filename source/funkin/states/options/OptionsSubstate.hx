@@ -180,10 +180,17 @@ class OptionsSubstate extends MusicBeatSubstate
 		],
 		"controls" => [
 			[
-				"keyboard", ["customizeKeybinds",]
+				"keyboard",
+				[
+					"customizeKeybinds",
+				]
 			], 
 			[
-				"controller", ["controllerMode",] // TODO customize binds for controllers
+				"controller",
+				[
+					"controllerMode",
+					"customizeButtonBinds",
+				]
 			]
 		],
 		
@@ -431,9 +438,17 @@ class OptionsSubstate extends MusicBeatSubstate
 						changed.push('customizeColours');
 				});
 
-			case 'customizeKeybinds':
-				var substate:IBindsMenu<Keybind> = ClientPrefs.controllerMode ? new ButtonBindsSubstate() : new KeyBindsSubstate();
-				var bindsMap:Map<String, Array<Int>> = ClientPrefs.controllerMode ? ClientPrefs.buttonBinds : ClientPrefs.keyBinds;
+			case 'customizeKeybinds' | 'customizeButtonBinds':
+				var substate:IBindsMenu<Keybind>;
+				var bindsMap:Map<String, Array<Int>>;
+				
+				if (option == 'customizeButtonBinds') {
+					substate = new ButtonBindsSubstate();
+					bindsMap = ClientPrefs.buttonBinds;
+				}else {
+					substate = new KeyBindsSubstate();
+					bindsMap = ClientPrefs.keyBinds;
+				}
 				
 				var currentBinds:Map<String, Array<Int>> = [];
 				for (key in bindsMap.keys())
