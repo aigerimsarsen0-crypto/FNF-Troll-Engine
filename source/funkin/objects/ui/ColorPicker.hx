@@ -316,6 +316,7 @@ class ColorPickerSubstate extends FlxSubState {
 		}
 
 		color = CoolUtil.colorFromString(newHex);
+		color.alpha = 255;
 		prevHex = newHex;
 		
 		rStepper.value = color.red;
