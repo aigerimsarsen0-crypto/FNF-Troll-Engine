@@ -1235,39 +1235,70 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function section_swapSides() {
-		for (note in _song.notes[curSection].sectionNotes)
-			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
+		var shitToDo:Array<ChartingAction> = [];
 
-		doUpdateGridObjects = true;
+		for (note in _song.notes[curSection].sectionNotes) {
+			var ogCol = note.column;
+			var nuCol = (note.column + _song.keyCount) % (_song.keyCount * 2);
+			function set_column(v) note.column = v;
+			shitToDo.push(new DynamicAction(set_column.bind(nuCol), set_column.bind(ogCol)));
+		}
+
+		if (shitToDo.length > 0) {
+			final f = () -> doUpdateGridObjects = true;
+			shitToDo.push(new DynamicAction(f, f));
+			new GroupAction("Swap Section Note Sides", shitToDo);
+		}
 	}
 	function section_duetNotes() {
-		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSection].sectionNotes) note.clone()];
+		var toCopy:Array<NoteData> = _song.notes[curSection].sectionNotes;
+		if (toCopy.length == 0)
+			return;
 
+		var copiedNotes:Array<NoteData> = [for (note in toCopy) note.clone()];
 		for (note in copiedNotes) {
 			if (Math.floor(note.column / _song.keyCount) % 2 == 1)
 				note.column -= _song.keyCount;
 			else
 				note.column += _song.keyCount;
-
-			_song.notes[curSection].sectionNotes.push(note);
 		}
 		
-		copiedNotes.resize(0);
-		copiedNotes = null;
-
-		doUpdateGridObjects = true;
-	}
-	function section_mirrorNotes() {
-		for (note in _song.notes[curSection].sectionNotes)
-		{
-			var boob:Int = note.column % _song.keyCount;
-			boob = _song.keyCount - 1 - boob;
-			if (note.column >= _song.keyCount) boob += _song.keyCount;
-
-			note.column = boob;
+		function redo() {
+			for (note in copiedNotes)
+				_song.notes[curSection].sectionNotes.push(note);
+			doUpdateGridObjects = true;
+		}
+		
+		function undo() {
+			for (note in copiedNotes)
+				_song.notes[curSection].sectionNotes.remove(note);
+			doUpdateGridObjects = true;
 		}
 
-		doUpdateGridObjects = true;
+		new DynamicAction(redo, undo, "Duet Section Notes");
+	}
+
+	function _mirrorNote(note:NoteData) {
+		var keyCount = _song.keyCount;
+		var fieldIndex:Int = Math.floor(note.column / keyCount);
+		var column:Int = note.column % keyCount;
+
+		note.column = (keyCount - 1 - column);
+		note.column += fieldIndex * _song.keyCount;
+	}
+
+	function section_mirrorNotes() {
+		var shitToDo:Array<ChartingAction> = [];
+		for (note in _song.notes[curSection].sectionNotes) {
+			var f = _mirrorNote.bind(note);
+			shitToDo.push(new DynamicAction(f, f));
+		}
+
+		if (shitToDo.length > 0) {
+			var f = () -> doUpdateGridObjects = true;
+			shitToDo.push(new DynamicAction(f, f));
+			new GroupAction("Mirror Section Notes", shitToDo);
+		}
 	}
 
 	function addSectionUI():Void
