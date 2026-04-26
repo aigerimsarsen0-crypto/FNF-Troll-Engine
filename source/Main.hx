@@ -31,9 +31,19 @@ final class Version
 
 	public static final buildDate:String = Sowy.getBuildDate();
 	public static final githubRepo:RepoInfo = Github.getCompiledRepoInfo();
+	public static final branchName:String = Github.getGitBranchName();
+	public static final gitHash:String = Github.getGitCommitHash();
 	
 	public static final semanticVersion:SemanticVersion = isBeta ? '$engineVersion-$betaVersion' : engineVersion;
-	public static final displayedVersion:String = 'v$semanticVersion';
+	public static final displayedVersion:String = {
+		var version = 'v$semanticVersion';
+		
+		#if !OFFICIAL_BUILD
+		if (gitHash.length > 0) version += ' [$branchName:${Github.getGitCommitHash(true)}]';
+		#end
+
+		version;
+	};
 }
 
 class Main extends Sprite
