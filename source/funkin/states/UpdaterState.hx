@@ -1,5 +1,7 @@
 package funkin.states;
 
+import flixel.util.FlxTimer;
+import flixel.addons.display.FlxBackdrop;
 import lime.system.System;
 import haxe.io.Path;
 import sys.io.File;
@@ -15,6 +17,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 
 import funkin.api.Github;
+import Main.Version;
 
 using StringTools;
 
@@ -77,8 +80,25 @@ private function formatBytes(Bytes:Float, Precision = 2):String {
 
 @:noScripting
 class UpdaterState extends MusicBeatState {
+	var busy:Bool = false;
+	var updateText:FlxText;
+	var controlsText:FlxText;
+	var fileBar:FlxBar;
+
+	static final path = '${Sys.getEnv("TEMP")}\\TrollEngineUpdate';
+	static var OS(get, never):String;
+	
+	inline static function get_OS() {
+		#if windows 
+		return 'windows';
+		#elseif mac
+		return 'mac';
+		#elseif linux
+		return 'linux';		
+		#end
+	}
+
 	var release:Release;
-	var downloading:Bool = false;
 	var stream:URLLoader;
 	var prog:DLProgress = {
 		bytesFinished: 0,
@@ -90,25 +110,40 @@ class UpdaterState extends MusicBeatState {
 		totalFiles: 0,
 		done: false
 	}
-
-	var path = '${Sys.getEnv("TEMP")}\\TrollEngineUpdate';
 	
 	public function new(r:Release){
 		super();
 		release=r;
 	}
 
-	var updateText:FlxText;
-
-	var fileBar:FlxBar;
 	override function create(){
-		var beta = release.prerelease ? " (PRE-RELEASE)" : "";
-		var currentBeta = Main.Version.isBeta ? " (PRE-RELEASE)" : "";
-		updateText = new FlxText(0, 0, FlxG.width,
-			'You are on Troll Engine ${Main.Version.displayedVersion}${currentBeta}, but the most recent is v${release.tag_name}${beta}!\n\nY = Update, N = Remind me later, I = Skip this update');
+		var tuff = new FlxSprite();
+		tuff.loadGraphic(Paths.image("week54prototype"));
+		tuff.screenCenter();
+		tuff.alpha = 0.6;
+		add(tuff);
+
+		var ac = new funkin.objects.shaders.AdjustColor();
+		ac.brightness = -32 / 100;
+		ac.contrast = 64 / 100;
+		tuff.shader = ac.shader;
+
+		/*
+		var tile = new FlxBackdrop(Paths.image("trollface"), 16, 16);
+		tile.antialiasing = false;
+		tile.setGraphicSize(0, FlxG.height / 4 - tile.spacing.y);
+		tile.updateHitbox();
+		tile.blend = ADD;
+		tile.alpha = 0.01;
+		tile.velocity.x = tile.velocity.y = 10 * (FlxG.height / 720);
+		tile.screenCenter(X);
+		add(tile);
+		*/
+
+		////
+		updateText = new FlxText(0, 0, FlxG.width);
 		updateText.setFormat(Paths.font("calibrib.ttf"), 32, FlxColor.WHITE, CENTER);
-		updateText.updateHitbox();
-		updateText.screenCenter(Y);
+		updateText.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4);
 		add(updateText);
 
 		fileBar = new FlxBar(0, 0, LEFT_TO_RIGHT, Std.int(FlxG.width/2), 10, null, null, 0, 100, false);
@@ -119,117 +154,140 @@ class UpdaterState extends MusicBeatState {
 		fileBar.visible = false;
 		add(fileBar);
 		super.create();
-	}
 
-	function installShit(){
-		prog.currentFile = 0;
-		prog.totalFiles = prog.downloadedFiles.length;
-		prog.bytesFinished = 0;
-		prog.bytesTotal = 0;
-		fileBar.setRange(0, prog.totalFiles);
-		updateText.text = 'Extracting (0 / ${prog.totalFiles})';
-
-		
-		var extractionPath = '${path}\\Finished';
-		clearFiles(extractionPath);
-		FileSystem.createDirectory(extractionPath);
-		for(file in prog.downloadedFiles){
-			prog.currentFile++;
-			fileBar.value = prog.currentFile;
-			updateText.text = 'Extracting (${prog.currentFile} / ${prog.totalFiles})';
-			if(file.fileName.endsWith(".zip")){
-				var toRead = File.read(file.path);
-				var entries = haxe.zip.Reader.readZip(toRead);
-				toRead.close();
-				var extractedFiles:Int = 0;
-				var totalFiles:Int = entries.length;
-				updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
-
-				for(zippedFile in entries){
-					extractedFiles++;
-					updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
-					var name = zippedFile.fileName;
-					trace(name);
-					var fullPath = Path.join([extractionPath, name]);
-					if(name.endsWith("/")){
-						// dir
-						if (!FileSystem.exists(fullPath))
-							FileSystem.createDirectory(fullPath);
-						else
-							clearFiles(fullPath);
-					}else{
-						var directory = [for (w in name.split("/")) w.trim()];
-						directory.pop();
-						FileSystem.createDirectory(Path.join([extractionPath, directory.join("/")]));
-						var data = haxe.zip.Reader.unzip(zippedFile);
-						File.saveBytes(fullPath, data);
-					}
-				}
-			}else
-				prog.finishedFiles.push(file);
-			
+		////
+		if (release == null) {
+			updateText.text = "grievous error";
+			yesSelected = () -> gotoMenus();
+			noSelected = yesSelected;
+			ignoreSelected = yesSelected;
+			return;
 		}
 
-		
+		// TODO: Display release notes
+		// trace(release.body);
+
+		var beta = release.prerelease ? " (PRE-RELEASE)" : "";
+		var currentBeta = Version.isBeta ? " (PRE-RELEASE)" : "";
+		updateText.text = 'You are on Troll Engine v${Version.semanticVersion}${currentBeta}, but the most recent is v${release.tag_name}${beta}!';
+		updateText.text += '\n\n[Y] Update • [N] Remind me later • [I] Skip this update';
+
+		yesSelected = startDownload;
+		noSelected = function() {
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			gotoMenus();
+		}
+		ignoreSelected = function() {
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			ignoreThisRelease();
+		}
 	}
 
-	inline static var OS:String = #if windows 'windows' #elseif mac 'mac' #elseif linux 'linux' #end;
+	override function update(elapsed:Float){
+		super.update(elapsed);
+		updateText.screenCenter(Y);
+		
+		if (!busy) {	
+			if (FlxG.keys.justPressed.N)
+				noSelected();
+			else if(FlxG.keys.justPressed.I)
+				ignoreSelected();
+			else if(FlxG.keys.justPressed.Y)
+				yesSelected();
+		}
+	}
 
-	function clearFiles(path:String){
-		if (FileSystem.exists(path))
-		{
-			for (file in FileSystem.readDirectory(path))
-			{
-				var fp = Path.join([path, file]);
-				if (FileSystem.isDirectory(fp)){
-					clearFiles(fp);
-					FileSystem.deleteDirectory(fp);
-				}else
-					FileSystem.deleteFile(fp);
+	function noop() {}
+
+	dynamic function noSelected() {}
+	dynamic function yesSelected() {}
+	dynamic function ignoreSelected() {}
+
+	dynamic function gotoMenus() {
+		MusicBeatState.switchState(new TitleState());
+	}
+
+	////
+	function ignoreThisRelease(playSound:Bool = true) {
+		Main.outOfDate = false;
+		
+		FlxG.save.data.ignoredUpdates ??= [];
+		FlxG.save.data.ignoredUpdates.push(release.tag_name);
+		FlxG.save.flush();
+
+		gotoMenus();
+	}
+
+	function startDownload() {		
+		//// get every asset. there should probably only be 1 but y'know!!
+		updateText.text = "Gathering files";
+
+		var downloadList:Array<DownloadData> = [];
+
+		for (asset in release.assets){
+			if (asset.name.toLowerCase().contains(OS.toLowerCase())){
+				downloadList.push({
+					fileName: asset.name,
+					link: asset.browser_download_url,
+					fileSize: asset.size
+				});
 			}
 		}
-	}
 
-	function startDownload(){
-		downloading = true;
-		FlxG.autoPause = false;
+		if (downloadList.length == 0) {
+			updateText.text = "Couldn't find platform-specific assets to download! :T\nPlease download the new version manually from GitHub";
+			updateText.text += "\n\n[Y] Go to the release page • [N] Remind me later • [I] Skip this update";
+			
+			new FlxTimer().start(0.08, tmr -> {
+				updateText.alpha = (tmr.elapsedLoops % 2 == 0) ? 1.0 : 0.6;
+			}, 4);
+			
+			FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
+			new FlxTimer().start(0.16, _ -> {
+				FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
+			}, 2);
+
+			yesSelected = function() {
+				FlxG.autoPause = true;
+				FlxG.openURL(Main.recentRelease.html_url);
+			};
+			noSelected = function() {
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				gotoMenus();
+			}
+			ignoreSelected = function() {
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				ignoreThisRelease();
+			}
+			return;
+			/*
+			// If no platform-specific release then get every asset
+			for (asset in release.assets) {
+				downloadList.push({
+					fileName: asset.name,
+					link: asset.browser_download_url,
+					fileSize: asset.size
+				});
+			}
+			*/
+		}
+
+		//// setup folder to download to
 		updateText.text = "Preparing";
-		// setup folder to download to
 
 		clearFiles(path);
 		FileSystem.createDirectory(path);
-		
-		// get every asset. there should probably only be 1 but y'know!!
 
-		updateText.text = "Gathering files";
-		prog.files = [];
-		for(asset in release.assets){
-			if (asset.name.startsWith(UpdaterState.OS)){
-				prog.files.push({
-					fileName: asset.name,
-					link: asset.browser_download_url,
-					fileSize: asset.size
-				});
-				prog.totalFiles++;
-			}
-		}
-
-		// If no platform-specific release then get every asset
-		if (prog.totalFiles == 0){
-			for (asset in release.assets) {
-				prog.files.push({
-					fileName: asset.name,
-					link: asset.browser_download_url,
-					fileSize: asset.size
-				});
-				prog.totalFiles++;
-				
-			}	
-		}
-
+		////
 		updateText.text = "Starting download";
+
+		prog.files = downloadList;
+		prog.totalFiles += downloadList.length;
+
+		busy = true;
 		fileBar.visible = true;
 
+		FlxG.autoPause = false;
 		download(function(){
 			fileBar.visible = false;
 			updateText.text = "Finished downloading! Preparing extraction";
@@ -253,51 +311,6 @@ class UpdaterState extends MusicBeatState {
 				System.exit(0);
 			});
 		});
-	}
-
-	function copy(base:String, dir:String, dest:String){
-		trace("copying from " + Path.join([base, dir]));
-		for (file in FileSystem.readDirectory(Path.join([base, dir])))
-		{
-			var finFile = Path.join([base, dir, file]);
-			var myFile = Path.join([dest, dir, file]);
-			if (file.endsWith(".dll") || file.endsWith(".ndll"))
-			{
-				var temp = '${Path.withoutExtension(myFile)}.tempcopy';
-				if(FileSystem.exists(temp))
-					FileSystem.deleteFile(temp);
-				FileSystem.rename(myFile, temp); // anything with the .temp ext will be removed after the game restarts
-			}
-			if (file == Path.withoutDirectory(Sys.programPath()))
-			{
-				trace("Ignoring copying the executable");
-				continue;
-			}
-			if(file == 'content'){
-				trace("TODO: merge content folders");
-				// Maybe add a way to ask the user "Wanna replace the fuckin folders???"
-				// And show a list of what content would be replaced with new content
-				// This ensures that people who edit base game folder will be abl eto say no and keep their changes
-				// rn tho, just skip content so we dont remove anyone's content folders
-				continue;
-			}
-			if (FileSystem.isDirectory(finFile)){
-				if (FileSystem.exists(myFile) && !FileSystem.isDirectory(myFile)){
-					FileSystem.deleteFile(myFile);
-					trace("deletin da file " + myFile);
-				}
-				if (!FileSystem.exists(myFile)){
-					trace("makin da directory " + myFile);
-					FileSystem.createDirectory(myFile);
-				}
-				
-				copy(base, Path.join([dir, file]), dest);
-			}else{
-				trace('Copying $finFile to $myFile');
-				File.copy(finFile, myFile); 
-			}
-			
-		}
 	}
 
 	function download(onFinish:Void->Void){
@@ -354,23 +367,120 @@ class UpdaterState extends MusicBeatState {
 		stream.load(new URLRequest(file.link));
 	}
 
-	override function update(elapsed:Float){
-		super.update(elapsed);
+	function installShit(){
+		prog.currentFile = 0;
+		prog.totalFiles = prog.downloadedFiles.length;
+		prog.bytesFinished = 0;
+		prog.bytesTotal = 0;
+		fileBar.setRange(0, prog.totalFiles);
+		updateText.text = 'Extracting (0 / ${prog.totalFiles})';
+
 		
-		if (downloading)return;
-		if (FlxG.keys.justPressed.N){
-			MusicBeatState.switchState(new TitleState());
+		var extractionPath = '${path}\\Finished';
+		clearFiles(extractionPath);
+		FileSystem.createDirectory(extractionPath);
+		for(file in prog.downloadedFiles) {
+			prog.currentFile++;
+			fileBar.value = prog.currentFile;
+			updateText.text = 'Extracting (${prog.currentFile} / ${prog.totalFiles})';
+			if(!file.fileName.endsWith(".zip")) {
+				prog.finishedFiles.push(file);
+				continue;
+			}
 
-		}else if(FlxG.keys.justPressed.I){
-			Main.outOfDate = false;
+			var toRead = File.read(file.path);
+			var entries = haxe.zip.Reader.readZip(toRead);
+			toRead.close();
+			var extractedFiles:Int = 0;
+			var totalFiles:Int = entries.length;
+			updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
+
+			for(zippedFile in entries){
+				extractedFiles++;
+				updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
+				var name = zippedFile.fileName;
+				trace(name);
+				var fullPath = Path.join([extractionPath, name]);
+				if(name.endsWith("/")){
+					// dir
+					if (!FileSystem.exists(fullPath))
+						FileSystem.createDirectory(fullPath);
+					else
+						clearFiles(fullPath);
+				}else{
+					var directory = [for (w in name.split("/")) w.trim()];
+					directory.pop();
+					FileSystem.createDirectory(Path.join([extractionPath, directory.join("/")]));
+					var data = haxe.zip.Reader.unzip(zippedFile);
+					File.saveBytes(fullPath, data);
+				}
+			}
+		}
+	}
+
+	function copy(base:String, dir:String, dest:String){
+		trace("copying from " + Path.join([base, dir]));
+		for (file in FileSystem.readDirectory(Path.join([base, dir])))
+		{
+			var finFile = Path.join([base, dir, file]);
+			var myFile = Path.join([dest, dir, file]);
+			if (file.endsWith(".dll") || file.endsWith(".ndll"))
+			{
+				var temp = '${Path.withoutExtension(myFile)}.tempcopy';
+				if(FileSystem.exists(temp))
+					FileSystem.deleteFile(temp);
+				FileSystem.rename(myFile, temp); // anything with the .temp ext will be removed after the game restarts
+			}
+			if (file == Path.withoutDirectory(Sys.programPath()))
+			{
+				trace("Ignoring copying the executable");
+				continue;
+			}
+			if(file == 'content'){
+				trace("Ignoring copying the content folder");
+				// Maybe add a way to ask the user "Wanna replace the fuckin folders???"
+				// And show a list of what content would be replaced with new content
+				// This ensures that people who edit base game folder will be abl eto say no and keep their changes
+				// rn tho, just skip content so we dont remove anyone's content folders
+
+				/*
+				no content should be distributed alongside the build!!!
+				TODO: mods menu!!!!
+				*/
+
+				continue;
+			}
+			if (FileSystem.isDirectory(finFile)){
+				if (FileSystem.exists(myFile) && !FileSystem.isDirectory(myFile)){
+					FileSystem.deleteFile(myFile);
+					trace("deletin da file " + myFile);
+				}
+				if (!FileSystem.exists(myFile)){
+					trace("makin da directory " + myFile);
+					FileSystem.createDirectory(myFile);
+				}
+				
+				copy(base, Path.join([dir, file]), dest);
+			}else{
+				trace('Copying $finFile to $myFile');
+				File.copy(finFile, myFile); 
+			}
 			
-			FlxG.save.data.ignoredUpdates ??= [];
-			FlxG.save.data.ignoredUpdates.push(release.tag_name);
-			FlxG.save.flush();
+		}
+	}
 
-			MusicBeatState.switchState(new TitleState());
-		}else if(FlxG.keys.justPressed.Y){
-			startDownload();
+	function clearFiles(path:String){
+		if (FileSystem.exists(path))
+		{
+			for (file in FileSystem.readDirectory(path))
+			{
+				var fp = Path.join([path, file]);
+				if (FileSystem.isDirectory(fp)){
+					clearFiles(fp);
+					FileSystem.deleteDirectory(fp);
+				}else
+					FileSystem.deleteFile(fp);
+			}
 		}
 	}
 
@@ -409,10 +519,10 @@ class UpdaterState extends MusicBeatState {
 			var recentRelease = Main.recentRelease;
 			var tagName:funkin.data.SemanticVersion = recentRelease.tag_name;
 
-			trace('Newest version: $tagName | Current: ${Main.Version.semanticVersion}');
+			trace('Newest version: $tagName | Current: ${Version.semanticVersion}');
 			
 			// hoping this works lol
-			if (tagName > Main.Version.semanticVersion){
+			if (tagName > Version.semanticVersion){
 				outOfDate = true;
 				trace('New version found!');
 			}
