@@ -85,7 +85,7 @@ class UpdaterState extends MusicBeatState {
 	var controlsText:FlxText;
 	var fileBar:FlxBar;
 
-	static final path = '${Sys.getEnv("TEMP")}\\TrollEngineUpdate';
+	static final path = Path.join([Sys.getEnv("TEMP"), "TrollEngineUpdate"]);
 	static var OS(get, never):String;
 	
 	inline static function get_OS() {
@@ -295,20 +295,33 @@ class UpdaterState extends MusicBeatState {
 			{ 
 				installShit();
 				updateText.text = "Finished extraction! Installing to the game folder..";
-				var finishedFolder = '${path}\\Finished';
-				var progPath = Sys.programPath();
-				var folderArray = progPath.split("\\");
-				var exe = Path.withoutDirectory(folderArray.pop());
-				var folder = folderArray.join("/");
-				copy(finishedFolder, '', FileSystem.absolutePath(folder));
+
+				var progPath = Path.normalize(Sys.programPath());
+				var exeFile = Path.withoutDirectory(progPath);
+				var programFolder = Path.directory(progPath);
+				var finishedFolder = Path.join([path, 'Finished']);
+
+				copy(finishedFolder, '', FileSystem.absolutePath(programFolder));
 				updateText.text = "Done copying!";
-				var nu = '${Path.withoutExtension(progPath)}.tempcopy';
-				FileSystem.rename(progPath, nu);
-				File.copy('${finishedFolder}\\${exe}', progPath);
+
+				FileSystem.rename(progPath, Path.withExtension(progPath, 'tempcopy'));
+				File.copy(Path.join([finishedFolder, exeFile]), progPath);
 				prog.done = true; 
-				Sys.command('start /B ${exe}');
+				
 				clearFiles(path);
-				System.exit(0);
+
+				var ret:Int = -1;
+
+				#if windows
+				ret = Sys.command('start', ['/B', exeFile]);
+				#end
+				
+				if (ret == 0) {
+					System.exit(0);
+				}
+
+				updateText.text = "It is now safe to close\nthis program";
+				updateText.color = FlxColor.ORANGE;
 			});
 		});
 	}
@@ -319,8 +332,7 @@ class UpdaterState extends MusicBeatState {
 			onFinish();
 			return;
 		}
-		prog.currentFile++;
-		updateText.text = 'Starting to download ${file.fileName} (${prog.currentFile} / ${prog.totalFiles})';
+		updateText.text = 'Beginning to download ${file.fileName} (${prog.currentFile} / ${prog.totalFiles})';
 		// wanted to use a while loop to download everything, but can't cus of it being async so L
 		downloadFile(file, download.bind(onFinish));
 	}
@@ -362,46 +374,53 @@ class UpdaterState extends MusicBeatState {
 			output.flush();
 			output.close();
 			onFinish();
+
+			prog.currentFile++;
 		});
 
 		stream.load(new URLRequest(file.link));
 	}
 
 	function installShit(){
+		var extractionPath = '${path}\\Finished';
+		clearFiles(extractionPath);
+		FileSystem.createDirectory(extractionPath);
+
 		prog.currentFile = 0;
 		prog.totalFiles = prog.downloadedFiles.length;
 		prog.bytesFinished = 0;
 		prog.bytesTotal = 0;
 		fileBar.setRange(0, prog.totalFiles);
-		updateText.text = 'Extracting (0 / ${prog.totalFiles})';
 
-		
-		var extractionPath = '${path}\\Finished';
-		clearFiles(extractionPath);
-		FileSystem.createDirectory(extractionPath);
-		for(file in prog.downloadedFiles) {
-			prog.currentFile++;
+		for (file in prog.downloadedFiles) {
 			fileBar.value = prog.currentFile;
-			updateText.text = 'Extracting (${prog.currentFile} / ${prog.totalFiles})';
-			if(!file.fileName.endsWith(".zip")) {
+
+			if (!file.fileName.endsWith(".zip")) {
+				prog.currentFile++;
 				prog.finishedFiles.push(file);
 				continue;
 			}
 
+			updateText.text = 'Reading file ${file.fileName} (${prog.currentFile} / ${prog.totalFiles})\nPlease wait';
+
 			var toRead = File.read(file.path);
 			var entries = haxe.zip.Reader.readZip(toRead);
 			toRead.close();
+
 			var extractedFiles:Int = 0;
 			var totalFiles:Int = entries.length;
-			updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
+			updateText.text = 'Extracting (${prog.currentFile} / ${prog.totalFiles}) (${extractedFiles} / ${totalFiles})';
 
-			for(zippedFile in entries){
+			for (zippedFile in entries) {
+				updateText.text = 'Extracting (${prog.currentFile} / ${prog.totalFiles}) (${extractedFiles} / ${totalFiles})';
 				extractedFiles++;
-				updateText.text = 'Extracting (${extractedFiles} / ${totalFiles}) (${prog.currentFile} / ${prog.totalFiles})';
+
 				var name = zippedFile.fileName;
-				trace(name);
 				var fullPath = Path.join([extractionPath, name]);
-				if(name.endsWith("/")){
+				
+				trace(name);
+				
+				if (name.endsWith("/")) {
 					// dir
 					if (!FileSystem.exists(fullPath))
 						FileSystem.createDirectory(fullPath);
@@ -415,6 +434,8 @@ class UpdaterState extends MusicBeatState {
 					File.saveBytes(fullPath, data);
 				}
 			}
+
+			prog.currentFile++;
 		}
 	}
 
