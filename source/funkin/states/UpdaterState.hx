@@ -1,5 +1,10 @@
 package funkin.states;
 
+import flixel.group.FlxGroup;
+import math.CoolMath;
+import flixel.math.FlxRect;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
 import flixel.util.FlxTimer;
 import flixel.addons.display.FlxBackdrop;
 import lime.system.System;
@@ -146,6 +151,11 @@ class UpdaterState extends MusicBeatState {
 		updateText.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4);
 		add(updateText);
 
+		controlsText = new FlxText(0, 0, FlxG.width);
+		controlsText.setFormat(Paths.font("calibrib.ttf"), 32, FlxColor.WHITE, CENTER);
+		controlsText.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4);
+		add(controlsText);
+
 		fileBar = new FlxBar(0, 0, LEFT_TO_RIGHT, Std.int(FlxG.width/2), 10, null, null, 0, 100, false);
 		fileBar.screenCenter(XY);
 		fileBar.numDivisions = 200;
@@ -156,23 +166,43 @@ class UpdaterState extends MusicBeatState {
 		super.create();
 
 		////
+		/*
+		if (true) {
+			release = cast {
+				name: "MD Test",
+				body: sys.io.File.getContent('cl.md'),
+				assets: [],
+			}
+			checkoutRelease();
+			return;
+		}
+		*/
+
 		if (release == null) {
 			updateText.text = "grievous error";
-			yesSelected = () -> gotoMenus();
-			noSelected = yesSelected;
-			ignoreSelected = yesSelected;
+			updateText.drawFrame();
+			updateText.screenCenter();
+			
+			yesSelected = gotoMenus;
+			noSelected = gotoMenus;
+			ignoreSelected = gotoMenus;
 			return;
 		}
 
-		// TODO: Display release notes
-		// trace(release.body);
-
 		var beta = release.prerelease ? " (PRE-RELEASE)" : "";
 		var currentBeta = Version.isBeta ? " (PRE-RELEASE)" : "";
-		updateText.text = 'You are on Troll Engine v${Version.semanticVersion}${currentBeta}, but the most recent is v${release.tag_name}${beta}!';
-		updateText.text += '\n\n[Y] Update • [N] Remind me later • [I] Skip this update';
 
-		yesSelected = startDownload;
+		updateText.text = 'You are on Troll Engine v${Version.semanticVersion}${currentBeta}, but the most recent is v${release.tag_name}${beta}!';
+		updateText.drawFrame();
+		
+		controlsText.text = '[Y] Check out release • [N] Remind me later • [I] Skip this update';
+		controlsText.drawFrame();
+		
+		updateText.screenCenter(Y);
+		updateText.y -= controlsText.height / 2;
+		controlsText.y = updateText.y + updateText.height + updateText.size;
+
+		yesSelected = checkoutRelease;
 		noSelected = function() {
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			gotoMenus();
@@ -185,7 +215,6 @@ class UpdaterState extends MusicBeatState {
 
 	override function update(elapsed:Float){
 		super.update(elapsed);
-		updateText.screenCenter(Y);
 		
 		if (!busy) {	
 			if (FlxG.keys.justPressed.N)
@@ -195,6 +224,11 @@ class UpdaterState extends MusicBeatState {
 			else if(FlxG.keys.justPressed.Y)
 				yesSelected();
 		}
+	}
+
+	override function draw() {
+		controlsText.exists = !busy;
+		super.draw();
 	}
 
 	function noop() {}
@@ -218,10 +252,8 @@ class UpdaterState extends MusicBeatState {
 		gotoMenus();
 	}
 
-	function startDownload() {		
+	function checkoutRelease() {
 		//// get every asset. there should probably only be 1 but y'know!!
-		updateText.text = "Gathering files";
-
 		var downloadList:Array<DownloadData> = [];
 
 		for (asset in release.assets){
@@ -234,44 +266,204 @@ class UpdaterState extends MusicBeatState {
 			}
 		}
 
-		if (downloadList.length == 0) {
-			updateText.text = "Couldn't find platform-specific assets to download! :T\nPlease download the new version manually from GitHub";
-			updateText.text += "\n\n[Y] Go to the release page • [N] Remind me later • [I] Skip this update";
-			
-			new FlxTimer().start(0.08, tmr -> {
-				updateText.alpha = (tmr.elapsedLoops % 2 == 0) ? 1.0 : 0.6;
-			}, 4);
-			
-			FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
-			new FlxTimer().start(0.16, _ -> {
-				FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
-			}, 2);
+		/*
+		// If no platform-specific release then get every asset
+		for (asset in release.assets) {
+			downloadList.push({
+				fileName: asset.name,
+				link: asset.browser_download_url,
+				fileSize: asset.size
+			});
+		}
+		*/
 
-			yesSelected = function() {
+		final canUpdate = downloadList.length > 0;
+
+		////
+		FlxG.mouse.visible = true;
+		
+		updateText.exists = false;		
+		controlsText.text = '[Y] ${canUpdate ? 'Install update' : 'Visit release page'} • [N] Remind me later • [I] Skip this update';
+
+		var group = new FlxGroup();
+		add(group);
+
+		////
+		var width = Std.int(FlxG.height * 4/3);
+
+		var titleText = new FlxText(0, 0, width);
+		titleText.setFormat(Paths.font("calibrib.ttf"), 32, FlxColor.WHITE, LEFT);
+		titleText.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4);
+		titleText.text = release.name;
+		group.add(titleText);
+		
+		var releaseText = new ScrollingText(0, 0, width);
+		releaseText.setFormat(Paths.font("calibri.ttf"), 24, FlxColor.WHITE, LEFT);
+		//releaseText.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4);
+		group.add(releaseText);
+
+		applyMDStyle(releaseText, release.body);
+
+		////
+		controlsText.drawFrame();
+		controlsText.y = FlxG.height - controlsText.height - 16;
+
+		titleText.drawFrame();
+		titleText.screenCenter(X);
+		titleText.y = 16;
+		
+		releaseText.drawFrame();
+		releaseText.x = titleText.x;
+		releaseText.y = titleText.y + titleText.height + 24;
+		releaseText.minY = releaseText.y;
+		releaseText.maxY = controlsText.y - 24;
+
+		//
+		yesSelected = function() {
+			if (canUpdate) {
+				remove(group);
+				group.destroy();
+				updateText.exists = true;
+				startDownload(downloadList);
+			}else {
 				FlxG.autoPause = true;
 				FlxG.openURL(Main.recentRelease.html_url);
-			};
-			noSelected = function() {
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-				gotoMenus();
 			}
-			ignoreSelected = function() {
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-				ignoreThisRelease();
-			}
-			return;
-			/*
-			// If no platform-specific release then get every asset
-			for (asset in release.assets) {
-				downloadList.push({
-					fileName: asset.name,
-					link: asset.browser_download_url,
-					fileSize: asset.size
-				});
-			}
-			*/
 		}
+		noSelected = function() {
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			gotoMenus();
+		}
+		ignoreSelected = function() {
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			ignoreThisRelease();
+		}
+	}
 
+	// Removes SPACES only, not tabs
+	static inline function ltrim(str:String) {
+		for (i in 0...str.length) {
+			if (str.fastCodeAt(i) != ' '.code) {
+				str = str.substring(i);
+				break;
+			}
+		}
+		return str;
+	}
+
+	static function applyMDStyle(text:FlxText, content:String) {
+		/*
+		Normally in real markdown it works like this:
+		1 (_ / *) for italic
+		2 (__ / **) for bold
+		3 (___ / ***) for bold and italic
+		4 (____ / ****) bold again
+
+		(From this point onward shit will crash)
+
+		5 (_____ / *****) bold and italic again
+		6 (______ / ******) just bold again
+		7 (_______ / *******) bold and italic again
+		8 (________ / ********) bold again you get it
+		*/
+
+		////
+		var render:String = content;
+		render = render.replace('\\\\', '<backslash>');
+		render = render.replace('\\*', '<asterisk>');
+		render = render.replace('\\_', '<underscore>');
+		
+		render = replaceMarker(render, '****', '<bold>');
+		render = replaceMarker(render, '***', '<bold><italic>');
+		render = replaceMarker(render, '**', '<bold>');
+		render = replaceMarker(render, '*', '<italic>');
+		
+		render = replaceMarker(render, '____', '<bold>');
+		render = replaceMarker(render, '___', '<bold><italic>');
+		render = replaceMarker(render, '__', '<bold>');
+		render = replaceMarker(render, '_', '<italic>');
+		
+		render = render.replace('<asterisk>', '*');
+		render = render.replace('<underscore>', '_');
+		render = render.replace('<backslash>', '\\');
+				
+		var boldFormat = new FlxTextFormat(null, true);
+		var italicFormat = new FlxTextFormat(null, null, true);
+		var boldMarker = new FlxTextFormatMarkerPair(boldFormat, "<bold>");
+		var italicMarker = new FlxTextFormatMarkerPair(italicFormat, "<italic>");
+
+		try {
+			text.applyMarkup(render, [boldMarker, italicMarker]);
+			text.drawFrame();
+		}catch(e) {
+			print(e);
+			text.clearFormats();
+			text.text = content;
+		}
+	}
+	
+	static function replaceMarker(str:String, ogMarker:String, newMarker:String) {
+		var split:Array<String> = [];
+		var i = 0;
+		while (i < str.length) {
+			var nli = str.indexOf('\n', i);
+			if (nli == -1) {
+				split.push(str.substring(i));
+				break;
+			}else {
+				split.push(str.substring(i, nli));
+				i = nli + 1;
+			}
+		}
+		
+		var buf = new StringBuf();
+		for (lineIdx => lineStr in split) {
+			//print('line ${lineIdx+1}: ${lineStr.replace('\r', '\\r').replace('\f', '\\b').replace('\n', '\\n')}');
+			var i = 0;
+			while (i < lineStr.length) {
+				var startIndex = lineStr.indexOf(ogMarker, i);
+				if (startIndex == -1) {
+					// no marker was found, add the rest of the line
+					//trace('line (${lineIdx+1}:$i): No start marker, add rest of the line');
+					buf.addSub(lineStr, i);
+					break;
+				}
+				startIndex += ogMarker.length;
+				
+				var endIndex = lineStr.indexOf(ogMarker, startIndex);
+				if (endIndex == -1) {
+					//trace('line (${lineIdx+1}:$i): No ending marker, add rest of the line');
+					// no marker was found, add the rest of the line
+					buf.addSub(lineStr, i);
+					break;
+				}
+				//trace('line (${lineIdx+1}:$i): Found marked content [$startIndex - $endIndex]');
+				i = endIndex + ogMarker.length;
+
+				buf.add(newMarker);
+				buf.add(lineStr.substring(startIndex, endIndex));
+				//buf.addSub(lineStr, startIndex, endIndex); // this is fucked
+				buf.add(newMarker);
+			}
+			buf.add('\n');
+		}
+		return buf.toString();
+	}
+	
+	/*
+	function warning() {
+		new FlxTimer().start(0.08, tmr -> {
+			updateText.alpha = (tmr.elapsedLoops % 2 == 0) ? 1.0 : 0.6;
+		}, 4);
+		
+		FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
+		new FlxTimer().start(0.16, _ -> {
+			FlxG.sound.play(Paths.sound('scrollMenu')).pitch = 2;
+		}, 2);
+	}
+	*/
+
+	function startDownload(downloadList) {	
 		//// setup folder to download to
 		updateText.text = "Preparing";
 
@@ -516,8 +708,9 @@ class UpdaterState extends MusicBeatState {
 		{
 			var github:Github = new Github(); // leaving the user and repo blank means it'll derive it from the repo the mod is compiled from
 			// if it cant find the repo you compiled in, it'll just default to troll engine's repo
-			recentRelease = github.getReleases((release:Release) -> (Main.downloadBetas || !release.prerelease))[0];
-			
+			var releases = github.getReleases((release:Release) -> (Main.downloadBetas || !release.prerelease));
+			recentRelease = releases[0];
+
 			if (recentRelease != null && FlxG.save.data.ignoredUpdates?.contains(recentRelease.tag_name) == true)
 				recentRelease = null;
 		}else{
@@ -571,4 +764,122 @@ class UpdaterState extends MusicBeatState {
 	public static function checkOutOfDate():Bool
 		return Main.outOfDate = false;
 	#end
+}
+
+// Making a new camera would've been a trillion times easier but oh well
+class ScrollingText extends FlxText {
+	public var minY:Float = 32;
+	public var maxY:Float = FlxG.height - 32;
+	public var viewHeight(get, never):Float;
+
+	public var bg:FlxSprite;
+	public var bar:FlxSprite;
+
+	override public function new(x:Float, y:Float, fw:Float) {
+		bg = new FlxSprite().makeGraphic(1, 1);
+		bg.exists = false;
+
+		bar = new FlxSprite().makeGraphic(1, 1);
+		bar.scale.x = 12;
+
+		super(x, y, fw);
+	}
+
+	override function graphicLoaded() {
+		super.graphicLoaded();
+	}
+	
+	override function update(elapsed:Float) {
+		bg.update(elapsed);
+		super.update(elapsed);
+		bar.update(elapsed);
+		
+		final viewHeight = viewHeight;
+		final canScroll = viewHeight < (this.frameHeight * this.scale.y);
+
+		if (canScroll && FlxG.mouse.wheel != 0) {
+			this.y += FlxG.mouse.wheel * this.size;
+		}
+		
+		bar.exists = canScroll;
+		if (bar.exists) {
+			bar.scale.y = viewHeight * (viewHeight / this.height);
+			bar.updateHitbox();
+			
+			var hovering = FlxG.mouse.overlaps(bar);
+			if (hovering && FlxG.mouse.justPressed)
+				bar.active = true;
+
+			bar.color = (hovering || bar.active) ? 0xFFFFFFFF : 0xFF999999;
+			
+			if (bar.active) {
+				if (FlxG.mouse.pressed) {
+					#if false
+					this.y -= FlxG.mouse.deltaY;
+					#else
+					bar.y += FlxG.mouse.deltaY;
+					final maxSprY = maxY - this.height;
+					final minSprY = minY;		
+					final minBarY = minY;
+					final maxBarY = maxY - bar.height;
+					this.y = CoolMath.scale(bar.y, minBarY, maxBarY, minSprY, maxSprY);
+					#end
+				}else {
+					bar.active = false;
+				}
+			}
+		}
+		
+		if (canScroll)
+			this.y = CoolMath.boundTo(this.y, maxY - this.height, minY);
+		else
+			this.y = minY;
+	}
+	
+	override function draw() {
+		if (bg.exists && bg.visible) {
+			bg.setPosition(this.x, minY);
+			bg.setGraphicSize(this.width, viewHeight);
+			bg.updateHitbox();
+			bg.scrollFactor.copyFrom(this.scrollFactor);
+			bg.draw();
+		}
+
+		{
+			var rect = this.clipRect ?? new FlxRect();
+			var bottom = this.y + this.height;
+			
+			rect.set(0, 0, this.width, this.height);
+			rect.y = Math.max(0.0, minY - this.y);
+			rect.height = this.height - (bottom - maxY) - rect.y;
+			
+			this.clipRect = rect;
+			super.draw();
+		}
+		
+		if (bar.exists && bar.visible) {
+			// this.y when you reach the bottom
+			final maxSprY = maxY - this.height;
+			// this.y when you're at the beggining
+			final minSprY = minY;
+		
+			// bar.y when you're at the beggining
+			final minBarY = minY;
+			// bar.y when you reach the bottom
+			final maxBarY = maxY - bar.height;
+		
+			bar.x = this.x + this.width + 2;
+			bar.y = CoolMath.scale(this.y, minSprY, maxSprY, minBarY, maxBarY);
+			bar.y = CoolMath.boundTo(bar.y, minBarY, maxBarY);
+			bar.draw();
+		}
+	}
+
+	override function destroy() {
+		super.destroy();
+		bg.destroy();
+		bar.destroy();
+	}
+
+	inline function get_viewHeight() return maxY - minY;
 }
