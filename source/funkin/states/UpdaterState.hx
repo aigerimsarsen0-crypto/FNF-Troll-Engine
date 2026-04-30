@@ -277,7 +277,11 @@ class UpdaterState extends MusicBeatState {
 		}
 		*/
 
+		#if UPDATES_ALLOWED
 		final canUpdate = downloadList.length > 0;
+		#else
+		final canUpdate = false;
+		#end
 
 		////
 		FlxG.mouse.visible = true;
@@ -697,7 +701,7 @@ class UpdaterState extends MusicBeatState {
 		}
 	}
 
-	#if(DO_AUTO_UPDATE || display)
+	#if(CHECK_FOR_UPDATES || display)
 	// gets the most recent release and returns it
 	// if you dont have download betas on, then it'll exclude prereleases
 	public static function getRecentGithubRelease():Release
