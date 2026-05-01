@@ -4,11 +4,11 @@ import cpp.ConstCharStar;
 
 @:include("filesystem")
 extern class Native {
-	inline static function getTempDirectory():ConstCharStar{
-		#if mac
+	#if mac
+	inline static function getTempDirectory():ConstCharStar
 		return untyped Sys.getEnv("TMPDIR").c_str();
-		#else
-		return untyped __cpp__("std::filesystem::temp_directory_path().c_str()");
-		#end
-	}
+	#else
+	@:native("std::filesystem::temp_directory_path().c_str")
+    static function getTempDirectory():ConstCharStar;
+	#end
 }
