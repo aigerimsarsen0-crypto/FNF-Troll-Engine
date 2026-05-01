@@ -1,5 +1,6 @@
 package funkin.states;
 
+import funkin.api.Native;
 import flixel.group.FlxGroup;
 import math.CoolMath;
 import flixel.math.FlxRect;
@@ -90,18 +91,8 @@ class UpdaterState extends MusicBeatState {
 	var controlsText:FlxText;
 	var fileBar:FlxBar;
 
-	static final path = Path.join([Sys.getEnv("TEMP"), "TrollEngineUpdate"]);
-	static var OS(get, never):String;
-	
-	inline static function get_OS() {
-		#if windows 
-		return 'windows';
-		#elseif mac
-		return 'mac';
-		#elseif linux
-		return 'linux';		
-		#end
-	}
+	static final path = Path.join([Native.getTempDirectory(), "TrollEngineUpdate"]);
+	static final OS:String = Sys.systemName().toLowerCase();
 
 	var release:Release;
 	var stream:URLLoader;
