@@ -77,13 +77,13 @@
 	<!-- Custom shader error printing :D -->
 	<haxedef name="traceShaderLineNumbers"/>
 
-	<!-- Allows the engine to checks for updates when the program starts -->
-	<define name="CHECK_FOR_UPDATES" if="native desktop OFFICIAL_BUILD" unless="debug" />
-
-	<!-- Allows the engine to download and install updates (asking the user first ofc) -->
-	<define name="UPDATES_ALLOWED" if="CHECK_FOR_UPDATES windows" unless="debug" />
-
 	<section if="OFFICIAL_BUILD">
+		<!-- Allows the engine to checks for updates when the program starts -->
+		<define name="CHECK_FOR_UPDATES" unless="debug" />
+
+		<!-- Allows the engine to download and install updates (it asks the user first ofc) -->
+		<define name="UPDATES_ALLOWED" if="native desktop" unless="mac"/>
+
 		<echo value="OFFICIAL_BUILD" />
 	</section>
 
