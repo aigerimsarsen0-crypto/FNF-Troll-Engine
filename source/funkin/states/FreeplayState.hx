@@ -68,9 +68,11 @@ class FreeplayState extends MusicBeatState
 
 			inline function sowy(songId:String) {
 				// weird old tgt shit
+				#if ALLOW_DEPRECATION
 				var splitted:Array<String> = songId.split(":");
 				if (splitted.length > 1)
 					songId = splitted[0];
+				#end
 				
 				if (!songIdMap.exists(songId)) {
 					songIdMap.set(songId, true);
@@ -298,6 +300,9 @@ class FreeplayState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
+		lerpHighscore = CoolMath.coolLerp(lerpHighscore, targetHighscore, elapsed * 12);
+		lerpRating = CoolMath.coolLerp(lerpRating, targetRating, elapsed * 8);
+		
 		updateInput(elapsed);
 		super.update(elapsed);
 	}
@@ -340,19 +345,14 @@ class FreeplayState extends MusicBeatState
 	function openResetScorePrompt() {
 		var songName:String = selectedSongData.getMetadata(curChartId).songName;
 		var displayName:String = songName;
-		persistentUpdate = false;
 
 		if (selectedSongCharts.length > 1) {
 			var diffName:String = Paths.getString('difficultyName_$curChartId') ?? curChartId;
 			displayName += ' ($diffName)';
 		}
-
-		openSubState(new ResetScoreSubState(
-			selectedSongData.songId, 
-			curChartId, 
-			false, 
-			displayName
-		));
+		
+		persistentUpdate = false;
+		openSubState(new ResetScoreSubState(selectedSongData.songId, curChartId, false, displayName));
 		menu.controls = null;
 		this.subStateClosed.addOnce(function(_) {
 			refreshScore();
@@ -379,10 +379,10 @@ class FreeplayState extends MusicBeatState
 
 		changeDifficulty(CoolUtil.updateDifficultyIndex(curChartIdx, curChartId, selectedSongCharts), true);
 
-		var metadata = data.getMetadata(curChartId);
 		var bgColor:FlxColor; 
 		var bgKey:String; 
 		
+		var metadata = data.getMetadata(curChartId);
 		if (metadata.freeplayBgColor == null && metadata.freeplayBgGraphic == null) {
 			bgColor = 0xFFFFFFFF;
 			bgKey = 'menuBGBlue';
@@ -401,10 +401,10 @@ class FreeplayState extends MusicBeatState
 		var record = Highscore.getRecord(data.songId, curChartId);
 
 		targetRating = Highscore.getRatingRecord(record) * 100;
-		if(ClientPrefs.showWifeScore)
-			targetHighscore = record.accuracyScore * 100;
+		targetHighscore = if (ClientPrefs.showWifeScore)
+			record.accuracyScore * 100;
 		else
-			targetHighscore = record.score;
+			record.score;
 
 		fcDisplay = switch(record.fcMedal) {
 			case TIER4: 't5fc';
@@ -413,7 +413,8 @@ class FreeplayState extends MusicBeatState
 			case TIER1: 'fc';
 			default: '';
 		}
-		fcDisplay = fcDisplay.length==0 ? fcDisplay : '${Paths.getString(fcDisplay) ?? fcDisplay}';
+		if (fcDisplay.length != 0)
+			fcDisplay = Paths.getString(fcDisplay) ?? fcDisplay;
 	}
 
 	static function makeBgSprite(){
@@ -466,23 +467,24 @@ class FreeplayState extends MusicBeatState
 
 			case 1:
 				curChartId = charts[0];
-				diffText.text = (Paths.getString('difficultyName_$curChartId') ?? curChartId).toUpperCase();
+				diffText.text = getDisplayedDifficulty(curChartId);
 
 			default:
-				curChartIdx = isAbs ? val : FlxMath.wrap(curChartIdx + val, 0, charts.length - 1);
+				curChartIdx = isAbs ? val : CoolUtil.updateIndex(curChartIdx, val, charts.length);
 				curChartId = charts[curChartIdx];
-				diffText.text = "< " + (Paths.getString('difficultyName_$curChartId') ?? curChartId).toUpperCase() + " >";
+				diffText.text = "< " + getDisplayedDifficulty(curChartId) + " >";
 		}
 
 		selectedSong = '$selectedSongData-$curChartId';
 		refreshScore();
 	}
 
+	private static inline function getDisplayedDifficulty(chartId:String):String {
+		return (Paths.getString('difficultyName_$chartId') ?? chartId).toUpperCase();	
+	}
+
 	override function draw()
 	{
-		lerpHighscore = CoolMath.coolLerp(lerpHighscore, targetHighscore, FlxG.elapsed * 12);
-		lerpRating = CoolMath.coolLerp(lerpRating, targetRating, FlxG.elapsed * 8);
-
 		final score = Math.round(lerpHighscore);
 		final rating = formatRating(Math.fround(lerpRating * 100.0) / 100.0);
 		final fcDisplay = (fcDisplay.length==0 ? fcDisplay : ' • [$fcDisplay]');
@@ -550,8 +552,11 @@ private class FreeplayMenu extends AlphabetMenu
 		var iconId:Null<String> = metadata.freeplayIcon;
 
 		Paths.currentModDirectory = song.folder;
+		addOption(songName, iconId);
+	}
 
-		var obj:Alphabet = this.addTextOption(songName);
+	public function addOption(label:String, ?iconId:String) {
+		var obj:Alphabet = this.addTextOption(label);
 
 		if (iconId == null)
 			return;
