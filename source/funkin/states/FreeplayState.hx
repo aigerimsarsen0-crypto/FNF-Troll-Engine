@@ -4,6 +4,7 @@ import math.CoolMath;
 import funkin.input.InputFormatter;
 import flixel.util.FlxColor;
 import funkin.objects.hud.HealthIcon;
+import funkin.objects.ChangingMenuBG;
 
 import sys.FileSystem;
 import funkin.data.Song;
@@ -34,8 +35,7 @@ class FreeplayState extends MusicBeatState
 	var menu:FreeplayMenu;
 	var songList:Array<BaseSong>;
 
-	var bgGrp = new FlxTypedGroup<FlxSprite>();
-	var bg:FlxSprite;
+	var bgManager:ChangingMenuBG;
 
 	var targetHighscore:Float = 0.0;
 	var lerpHighscore:Float = 0.0;
@@ -147,7 +147,8 @@ class FreeplayState extends MusicBeatState
 		songList ??= getFreeplaySongs();
 
 		////
-		add(bgGrp);
+		bgManager = new ChangingMenuBG();
+		add(bgManager);
 
 		menu = new FreeplayMenu();
 		menu.controls = controls;
@@ -392,7 +393,7 @@ class FreeplayState extends MusicBeatState
 		}
 
 		reloadFont();
-		fadeToBg(Paths.image(bgKey), bgColor);
+		bgManager.fadeToBg(Paths.image(bgKey), bgColor);
 	}
 
 	function refreshScore()
@@ -415,46 +416,6 @@ class FreeplayState extends MusicBeatState
 		}
 		if (fcDisplay.length != 0)
 			fcDisplay = Paths.getString(fcDisplay) ?? fcDisplay;
-	}
-
-	static function makeBgSprite(){
-		var spr = new FlxSprite();
-		spr.active = false;
-		spr.moves = false;
-		return spr;
-	}
-
-	function fadeToBg(graphic, color:FlxColor) {
-		if (bg != null && bg.graphic == graphic && bg.color == color)
-			return;
-
-		// HORRIBLE BUT COOL I HOPE
-
-		var prevBg = bg;
-		
-		if (bgGrp.members.length > 4) {
-			bg = bgGrp.members[0];
-			bg.exists = true;
-			FlxTween.cancelTweensOf(bg);
-
-			var sowy = bgGrp.members[1];
-			sowy.alpha = 1.0;
-			FlxTween.cancelTweensOf(sowy);
-		}else {
-			bg = bgGrp.recycle(FlxSprite, makeBgSprite);
-		}
-		bgGrp.members.remove(bg);
-		bgGrp.members.push(bg);
-		
-		bg.loadGraphic(graphic);
-		bg.screenCenter();
-		bg.color = color;
-		bg.alpha = 1.0;
-
-		if (prevBg != null) {
-			bg.alpha = 0.0;
-			FlxTween.tween(bg, {alpha: 1.0}, 0.4, {ease: FlxEase.sineInOut});
-		}
 	}
 
 	function changeDifficulty(val:Int = 0, ?isAbs:Bool)
