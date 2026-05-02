@@ -486,7 +486,7 @@ class FreeplayState extends MusicBeatState
 	override function draw()
 	{
 		final score = Math.round(lerpHighscore);
-		final rating = formatRating(Math.fround(lerpRating * 100.0) / 100.0);
+		final rating = formatRating(Math.ffloor(lerpRating * 100.0) / 100.0);
 		final fcDisplay = (fcDisplay.length==0 ? fcDisplay : ' • [$fcDisplay]');
 
 		scoreText.text = 'PERSONAL BEST • $score • ($rating%)' + fcDisplay;
@@ -495,19 +495,8 @@ class FreeplayState extends MusicBeatState
 		super.draw();
 	}
 
-	private static function formatRating(val:Float):String
-	{
-		var str = Std.string(Math.ffloor(val * 100.0) / 100.0);
-		var dot = str.indexOf('.');
-
-		if (dot == -1)
-			return str + '.00';
-
-		dot += 3;
-		while (str.length < dot)
-			str += '0';
-
-		return str;
+	private static inline function formatRating(val:Float):String {
+		return CoolerStringTools.formatDecimal(val, 2);
 	}
 
 	private function positionHighscore() {
