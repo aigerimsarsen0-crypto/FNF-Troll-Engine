@@ -8,10 +8,10 @@ package funkin.states.base;
 // replaces the substate bullshit with a custom Transition class
 // custom transitions should override the create and start methods, then call finish when they're done.
 
-import funkin.states.scripting.ScriptedTransition;
 import flixel.FlxState;
 import funkin.transitions.Transition;
 import funkin.transitions.Transition.Transition as TransitionInstance;
+import funkin.transitions.ScriptedTransition;
 
 class TransitionableState extends FlxState
 {

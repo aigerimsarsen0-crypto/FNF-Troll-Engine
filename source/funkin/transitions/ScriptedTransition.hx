@@ -1,4 +1,4 @@
-package funkin.states.scripting;
+package funkin.transitions;
 
 import funkin.transitions.Transition;
 import funkin.scripts.ScriptedClassShit;
