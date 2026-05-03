@@ -84,6 +84,8 @@
 		<!-- Allows the engine to download and install updates (it asks the user first ofc) -->
 		<define name="UPDATES_ALLOWED" if="native desktop" unless="mac"/>
 
+		<define name="DONT_INCLUDE_DEFAULT" />
+
 		<echo value="OFFICIAL_BUILD" />
 	</section>
 
