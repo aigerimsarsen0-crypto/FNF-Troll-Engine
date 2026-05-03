@@ -97,7 +97,7 @@
 	<set name="BUILD_DIR" value="export/32bit" if="32bits" />
 
 	<assets path="assets" />
-	<assets path='default_content' rename='content' if='false' embed='false' exclude="*.mp3" />
+	<assets path='default_content' rename='content' unless='DONT_INCLUDE_DEFAULT' embed='false' exclude="*.mp3" />
 
 	<icon path="art/iconOG.png" />
 	<icon path="art/icon64.png" size='64' />
