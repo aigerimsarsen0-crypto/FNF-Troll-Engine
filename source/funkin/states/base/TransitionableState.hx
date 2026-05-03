@@ -132,6 +132,7 @@ class TransitionableState extends FlxState
 	}
 
 	function _startTransition(cl:TransitionReference, status:TransitionStatus, onComplete:Void->Void) {
+		//trace((_lastTransition:TransitionReference).toString(), cl.toString());
 		if (!_lastTransition?.exists || ((_lastTransition:TransitionReference).toString() != cl.toString())) {
 			_lastTransition?.destroy(); // just in case
 			_lastTransition = cl.createInstance();
@@ -163,7 +164,8 @@ class TransitionableState extends FlxState
 	{
 		// Close the old state (if there is an old state)
 		if (transition != null) {
-			transition.destroy();
+			if (transition != defaultTransition)
+				transition.destroy();
 			transition = null;
 		}
 
@@ -242,6 +244,8 @@ abstract TransitionReference(Dynamic) from Class<TransitionInstance> from Transi
 	public function toString():String {
 		if (this is String)
 			return this;
+		else if (this is Class)
+			return Type.getClassName(this);
 		else if (this is ScriptedTransition)
 			return @:privateAccess this.name;
 		else if (this is TransitionInstance)
