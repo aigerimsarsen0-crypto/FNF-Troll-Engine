@@ -30,7 +30,7 @@ class ScriptedTransition extends Transition implements IScriptedClass {
 		return script.exists(func);
 
 	public static function fromName(name:String) {
-		var path = Paths.getHScriptPath('states/transitions/$name');
+		var path = Paths.getHScriptPath('transitions/$name');
 		if (path == null) return null;
 
 		var expr = FunkinHScript.parseFile(path);
