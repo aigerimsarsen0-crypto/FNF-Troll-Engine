@@ -8,30 +8,32 @@ package funkin.states.base;
 // replaces the substate bullshit with a custom Transition class
 // custom transitions should override the create and start methods, then call finish when they're done.
 
+import funkin.states.scripting.ScriptedTransition;
 import flixel.FlxState;
 import funkin.transitions.Transition;
+import funkin.transitions.Transition.Transition as TransitionInstance;
 
 class TransitionableState extends FlxState
 {
-	public static var defaultTransition:Class<Transition> = null;
+	public static var defaultTransition:TransitionReference = null;
 
 	public static var skipNextTransIn:Bool = false;
 	public static var skipNextTransOut:Bool = false;
 
 	/** Intro transition to use after switching to this state **/
-	public var transIn:Class<Transition>;
+	public var transIn:TransitionReference;
 	/** Outro transition to use before switching to another state **/
-	public var transOut:Class<Transition>;
+	public var transOut:TransitionReference;
 
 	/** Transition instance **/
-	public var transition:Transition = null;
+	public var transition:TransitionInstance = null;
 
 	////
 	var transitionCamera:FlxCamera = null;
 
-	static var _lastTransition:Transition = null;
+	static var _lastTransition:TransitionInstance = null;
 
-	var _requestedTransition:Transition;
+	var _requestedTransition:TransitionInstance;
 	var _requestTransitionReset:Bool;
 	var _requestedTransitionStatus:TransitionStatus;
 
@@ -45,7 +47,7 @@ class TransitionableState extends FlxState
 	 * @param	TransIn		Plays when the state begins
 	 * @param	TransOut	Plays when the state ends
 	 */
-	public function new(?TransIn:Class<Transition>, ?TransOut:Class<Transition>)
+	public function new(?TransIn:TransitionReference, ?TransOut:TransitionReference)
 	{
 		this.transIn = TransIn ?? defaultTransition;
 		this.transOut = TransOut ?? defaultTransition;
@@ -129,10 +131,10 @@ class TransitionableState extends FlxState
 		_startTransition(transOut, OUT, finishTransOut);
 	}
 
-	function _startTransition(cl:Class<Transition>, status:TransitionStatus, onComplete:Void->Void) {
-		if (!_lastTransition?.exists || !Std.isOfType(_lastTransition, cl)) {
+	function _startTransition(cl:TransitionReference, status:TransitionStatus, onComplete:Void->Void) {
+		if (!_lastTransition?.exists || ((_lastTransition:TransitionReference).toString() != cl.toString())) {
 			_lastTransition?.destroy(); // just in case
-			_lastTransition = Type.createInstance(cl, []);
+			_lastTransition = cl.createInstance();
 		}else {
 			// Prevent resetTransition from nuking the current transition
 			if (transition == _lastTransition)
@@ -143,7 +145,7 @@ class TransitionableState extends FlxState
 		startTransition(_lastTransition, status);
 	}
 
-	public function startTransition(requestedTrans:Transition, status:TransitionStatus)
+	public function startTransition(requestedTrans:TransitionInstance, status:TransitionStatus)
 	{
 		_requestedTransition = requestedTrans;
 		_requestedTransitionStatus = status;	
@@ -218,5 +220,47 @@ class TransitionableState extends FlxState
 		{
 			_onExit();
 		}
+	}
+}
+
+abstract TransitionReference(Dynamic) from Class<TransitionInstance> from TransitionInstance from String {
+	public function createInstance():Null<TransitionInstance> {
+		return if (this is Class) {
+			Type.createInstance(this, []);
+		}
+		else if (this is TransitionInstance) {
+			this;
+		}
+		else if (this is String) {
+			fromString(this);
+		}
+		else {
+			null;
+		}
+	}
+
+	public function toString():String {
+		if (this is String)
+			return this;
+		else if (this is ScriptedTransition)
+			return @:privateAccess this.name;
+		else if (this is TransitionInstance)
+			return Type.getClassName(Type.getClass(this));
+		else
+			return 'null';
+	}
+
+	private static function fromString(str:String):Null<TransitionInstance> {
+		var instance:Null<TransitionInstance> = null;
+		
+		instance = ScriptedTransition.fromName(str);
+		
+		if (instance == null) {
+			var cl = Type.resolveClass(str);
+			if (cl != null)
+				instance = Type.createInstance(cl, []);
+		}
+
+		return instance;
 	}
 }
