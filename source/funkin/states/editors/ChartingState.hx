@@ -1847,7 +1847,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			_song.metadata.artist = artistInputText.text;
 			_song.metadata.charter = charterInputText.text;
 			_song.metadata.modcharter = modcharterInputText.text;
-			_song.metadata.extraInfo = extraInfoInputText.text.split(',');
+			_song.metadata.extraInfo = extraInfoInputText.text.length == 0 ? [] : extraInfoInputText.text.split(',');
 
 			var data:String = Json.stringify(_song.metadata, "\t");
 			CoolUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
@@ -2409,7 +2409,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'metadata_modcharter':
 					_song.metadata.modcharter = sender.text;
 				case 'metadata_extraInfo':
-					_song.metadata.extraInfo = sender.text.split(',');
+					_song.metadata.extraInfo = sender.text.length == 0 ? [] : sender.text.split(',');
 				
 				case 'tracks_inst':
 					_song.tracks.inst = sender.text.split(',');
