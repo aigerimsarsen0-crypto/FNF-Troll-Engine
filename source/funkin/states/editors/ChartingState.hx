@@ -3163,6 +3163,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		ss.onSelectChart = function(song:BaseSong, chartId:String) {
 			Song.loadSong(song, chartId);
 			_song = PlayState.SONG;
+			if (this.songId == song.songId) {
+				_session ??= makeSession();
+				_session.songPosition = Conductor.songPosition;
+			}
 			ss.close();
 			onChartLoaded();
 		}
