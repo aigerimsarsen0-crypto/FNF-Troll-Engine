@@ -818,7 +818,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		];
 
 		for (folderPath in Paths.getFolders('notetypes')) {
-			Paths.iterateDirectory(folderPath, function(fileName:String) {
+			for (fileName in Paths.readDirectory(folderPath)) {
 				var fileExtension:Null<String> = null;
 
 				for (ext in extensions) {
@@ -829,14 +829,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 
 				if (fileExtension == null)
-					return;
+					continue;
 
 				var name:String = fileName.substr(0, fileName.length - fileExtension.length); // get file name
 				if (noteTypeList.contains(name)) // if it already is on the list
-					return;
+					continue;
 
 				noteTypeList.push(name);
-			});
+			}
 		}
 		#end
 	}
