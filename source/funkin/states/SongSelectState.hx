@@ -48,7 +48,7 @@ class SongSelectState extends MusicBeatSubstate
 		for (modDir in Paths.getModDirectories()){
 			var folder = Paths.mods('$modDir/songs/');
 			for (name in Paths.readDirectory(folder))
-				pushSong.bind(modDir, folder, name);
+				pushSong(modDir, folder, name);
 		}
 		#end
 
