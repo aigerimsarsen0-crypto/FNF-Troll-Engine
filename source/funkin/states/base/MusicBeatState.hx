@@ -22,8 +22,6 @@ import funkin.states.scripting.HScriptOverridenState;
 
 enum abstract SongSyncMode(String) to String {
 	var DIRECT = "Direct";
-	var LEGACY = "Legacy";
-	var PSYCH_1_0 = "Psych 1.0";
 	var LAST_MIX = "Last Mix";
 	var NEVER2X = "Never2x";
 	var SYSTEM_TIME = "System Time";
@@ -31,10 +29,9 @@ enum abstract SongSyncMode(String) to String {
 	public static function fromString(str:String):SongSyncMode {
 		return switch (str) {
 			case "Direct": DIRECT;
-			case "Legacy": LEGACY;
-			case "Psych 1.0": PSYCH_1_0;
 			case "System Time": SYSTEM_TIME;
-			//case "Last Mix": LAST_MIX;
+			case "Never2x": NEVER2X;
+			case "Last Mix": LAST_MIX;
 			default: LAST_MIX;
 		}
 	} 
@@ -170,19 +167,6 @@ class MusicBeatState extends TransitionableState
 				// Ludem Dare sync
 				// Jittery and retarded, but works maybe
 				Conductor.songPosition = inst.time;
-
-			case LEGACY:
-				// Resync Vocals
-				// FUCKING SUCKS DONT USE LMFAO! It's here just incase though
-				Conductor.songPosition += elapsedMS;
-				
-			case PSYCH_1_0:
-				// Psych 1.0 method
-				Conductor.songPosition += elapsedMS;
-				Conductor.songPosition = FlxMath.lerp(inst.time, Conductor.songPosition, Math.exp(-elapsedMS * 0.005));
-				var timeDiff:Float = Math.abs(inst.time - Conductor.songPosition);
-				if (timeDiff > 1000)
-					Conductor.songPosition = Conductor.songPosition + 1000 * FlxMath.signOf(timeDiff);
 
 			case SYSTEM_TIME:
 				Conductor.songPosition = Conductor.getAccPosition();
