@@ -3079,7 +3079,7 @@ class PlayState extends MusicBeatState
 
 	private function onKeyPress(key:FlxKey):Void
 	{
-		if (paused || !startedCountdown || inCutscene)
+		if (paused || !startedCountdown || inCutscene || endingSong)
 			return;
 
 		if (pressed.contains(key)) return;
@@ -3118,14 +3118,11 @@ class PlayState extends MusicBeatState
 		var controlledFields:Array<PlayField> = [];
 
 		for (field in playfields.members) {
-			if ((player != -1 && field.playerId != player) || !field.isPlayer || !field.inControl || field.autoPlayed)
+			if ((player >= 0 && field.playerId != player) || !field.isPlayer || !field.inControl || field.autoPlayed)
 				continue;
 
 			controlledFields.push(field);
 			field.keysPressed[column] = true;
-
-			if (endingSong)
-				continue;
 
 			var note:Note = {
 				var ret:Dynamic = callOnScripts("onFieldInput", [field, column, hitNotes]);
