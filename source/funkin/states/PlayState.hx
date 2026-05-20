@@ -3103,13 +3103,13 @@ class PlayState extends MusicBeatState
 		if (column != -1) strumKeyUp(column);
 	}
 
-	private function strumKeyDown(column:Int, player:Int = -1) {
+	private function strumKeyDown(column:Int, player:Int = -1, ?hitTime:Float) {
 		if (strumsBlocked[column]) return;
 
 		if (callOnScripts("onKeyPress", [column]) == Globals.Function_Stop)
 			return;
 
-		var hitTime:Float = Conductor.getAccPosition();
+		hitTime ??= Conductor.getAccPosition();
 
 		if(ClientPrefs.hitsoundBehav == 'Key Press' && !cpuControlled)
 			playShithound();
@@ -3122,22 +3122,15 @@ class PlayState extends MusicBeatState
 				continue;
 
 			controlledFields.push(field);
-			field.keysPressed[column] = true;
 
 			var note:Note = {
 				var ret:Dynamic = callOnScripts("onFieldInput", [field, column, hitNotes]);
 				if (ret == Globals.Function_Stop) null;
 				else if (ret is Note) ret;
-				else field.input(column, hitTime);
+				else field.inputDown(column, hitTime);
 			}
 
-			if (note == null) {
-				var spr:StrumNote = field.strumNotes[column];
-				if (spr != null) {
-					spr.playAnim('pressed', true);
-					spr.resetAnim = 0;
-				}
-			}else {
+			if (note != null) {				
 				hitNotes.push(note);
 			}
 		}
@@ -3154,7 +3147,7 @@ class PlayState extends MusicBeatState
 		//trace('strum down: $column');
 	}
 
-	private function strumKeyUp(column:Int, player:Int = -1) {
+	private function strumKeyUp(column:Int, player:Int = -1, ?hitTime:Float) {
 		// doesnt matter if THIS is done while paused
 		// only worry would be if we implemented Lifts
 		// but afaik we arent doing that
@@ -3164,12 +3157,7 @@ class PlayState extends MusicBeatState
 			if ((player != -1 && field.playerId != player) || !field.isPlayer || !field.inControl || field.autoPlayed)
 				continue;
 
-			field.keysPressed[column] = false;
-
-			var spr:StrumNote = field.strumNotes[column];
-			switch(spr?.animation.name) {
-				case 'pressed' | 'confirm': spr.resetAnim = -1;
-			}
+			field.inputUp(column, hitTime);
 		}
 
 		callOnScripts('onKeyRelease', [column, player]);
