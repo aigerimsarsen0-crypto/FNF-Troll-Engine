@@ -41,8 +41,9 @@ jobs:
       - name: Install Haxelib
         run: |
           haxelib install hxcpp > nul --quiet
-          haxelib install hxpkg --quiet
-          haxelib run hxpkg install
+          haxelib install hmm --quiet
+          haxelib run hmm setup
+          haxelib run hmm install
         shell: cmd
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
@@ -114,8 +115,8 @@ jobs:
         run: |
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
-          haxelib install hxpkg --quiet
-          haxelib run hxpkg install
+          haxelib install hmm --quiet
+          haxelib run hmm install
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
@@ -147,8 +148,8 @@ jobs:
         run: |
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
-          haxelib install hxpkg --quiet
-          haxelib run hxpkg install
+          haxelib install hmm --quiet
+          haxelib run hmm install
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
