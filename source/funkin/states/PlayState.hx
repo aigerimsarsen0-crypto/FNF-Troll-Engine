@@ -569,7 +569,6 @@ class PlayState extends MusicBeatState
 
 		Conductor.cleanup();
 
-		updateSongPos = false;
 		Conductor.songSyncMode = SongSyncMode.fromString(ClientPrefs.songSyncMode);
 
 		Wife3.timeScale = Wife3.judgeScales.get(ClientPrefs.judgeDiff);
@@ -2222,6 +2221,39 @@ class PlayState extends MusicBeatState
 		FlxG.watch.addQuick("visualPos", Conductor.visualPosition);
 	}
 
+	override function updateSongPosition(?_:FlxSound) {
+		inline function lagSpikesEnded() {
+			return (FlxG.elapsed < 0.3 ? ++goodTicks : goodTicks=0) >= 6;
+		}
+
+		if (!paused) {
+			if (startedSong) {
+				super.updateSongPosition(inst);
+			}
+			else if (!startedCountdown) {
+				if (!inCutscene) {
+					if (lagSpikesEnded())
+						startCountdown();
+				}
+			}
+			else {
+				if (lagSpikesEnded()) {
+					Conductor.songPosition += FlxG.elapsed * 1000;
+					Conductor.updateSteps();
+
+					if (Conductor.songPosition >= PlayState.startOnTime) {
+						startSong(PlayState.startOnTime);
+						PlayState.startOnTime = 0;
+					}
+				}
+			}
+
+			if (Conductor.songPosition >= songLength) {
+				finishSong(false);
+			}
+		}
+	}
+
 	override function updateSteps() {
 		super.updateSteps();
 		setOnScripts('curDecStep', curDecStep);
@@ -2364,38 +2396,6 @@ class PlayState extends MusicBeatState
 
 		if (controls.PAUSE && canPause)
 			doPauseShit();
-
-		if (!paused) {
-			inline function lagSpikesEnded() {
-				return (elapsed < 0.3 ? ++goodTicks : goodTicks=0) >= 6;
-			}
-
-			if (!startedCountdown) {
-				if (!inCutscene) {
-					if (lagSpikesEnded())
-						startCountdown();
-				}
-			}
-			else if (!startedSong) {
-				if (lagSpikesEnded()) {
-					Conductor.songPosition += elapsed * 1000;
-					Conductor.updateSteps();
-
-					if (Conductor.songPosition >= PlayState.startOnTime) {
-						startSong(PlayState.startOnTime);
-						PlayState.startOnTime = 0;
-					}
-				}
-			}
-			else if (Conductor.songPosition >= 0)
-			{
-				updateSongPosition(inst);
-			}
-
-			if (Conductor.songPosition >= songLength) {
-				finishSong(false);
-			}
-		}
 
 		////
 		super.update(elapsed);
