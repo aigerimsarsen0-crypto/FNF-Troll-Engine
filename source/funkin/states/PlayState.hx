@@ -383,9 +383,7 @@ class PlayState extends MusicBeatState
 	public var fish:Fish;
 
 	/** debugPrint text container **/
-	#if(HSCRIPT_ALLOWED)
-	private var luaDebugGroup:FlxTypedGroup<DebugText> = new FlxTypedGroup<DebugText>();
-	#end
+	private var debugPrintGroup:FlxTypedGroup<DebugText> = new FlxTypedGroup<DebugText>();
 
 	////
 	public var songId:String = "";
@@ -973,8 +971,8 @@ class PlayState extends MusicBeatState
 		add(notefields);
 		add(timingTxt);
 
-		luaDebugGroup.cameras = [camOther];
-		add(luaDebugGroup);
+		debugPrintGroup.cameras = [camOther];
+		add(debugPrintGroup);
 
 		#if FUNNY_ALLOWED
 		fish = new Fish(this);
@@ -1149,16 +1147,13 @@ class PlayState extends MusicBeatState
 	}
 
 	public function addTextToDebug(text:String, ?color:FlxColor = FlxColor.WHITE) {
-		luaDebugGroup.forEachAlive(function(spr:DebugText) {
+		debugPrintGroup.forEachAlive(function(spr:DebugText) {
 			spr.y += 20;
 		});
 
-		if(luaDebugGroup.members.length > 34) {
-			var blah = luaDebugGroup.members[34];
-			blah.destroy();
-			luaDebugGroup.remove(blah);
-		}
-		luaDebugGroup.insert(0, new DebugText(text, luaDebugGroup));
+		var txt = debugPrintGroup.recycle(DebugText, () -> new DebugText(debugPrintGroup));
+		txt.text = text;
+		txt.setPosition(10, 10);
 	}
 
 	public function reloadHealthBarColors() {
