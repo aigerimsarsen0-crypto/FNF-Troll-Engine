@@ -4,8 +4,7 @@ import flixel.tweens.FlxTween;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.util.FlxColor;
 import funkin.scripts.Globals.*;
-import funkin.states.PlayState;
-import funkin.states.GameOverSubstate;
+import funkin.states.PlayState.instance as game;
 import Type.ValueType;
 
 import openfl.display.BlendMode;
@@ -29,19 +28,19 @@ class Util
 		if (killMe.length > 1)
 			return getVarInArray(getPropertyLoopThingWhatever(killMe), killMe[killMe.length-1]);
 		else
-			return getVarInArray(getInstance(), variable);
+			return getVarInArray(game, variable);
 	}
 	public static function setProperty(variable:String, value:Dynamic) {
 		var killMe:Array<String> = variable.split('.');
 		if (killMe.length > 1)
 			setVarInArray(getPropertyLoopThingWhatever(killMe), killMe[killMe.length-1], value);
 		else
-			setVarInArray(getInstance(), variable, value);
+			setVarInArray(game, variable, value);
 	}
 
 	public static function getPropertyFromGroup(obj:String, index:Int, variable:Dynamic) {
 		var shitMyPants:Array<String> = obj.split('.');
-		var realObject:Dynamic = Reflect.getProperty(getInstance(), obj);
+		var realObject:Dynamic = Reflect.getProperty(game, obj);
 		if(shitMyPants.length>1)
 			realObject = getPropertyLoopThingWhatever(shitMyPants, false);
 
@@ -60,7 +59,7 @@ class Util
 	}
 	public static function setPropertyFromGroup(obj:String, index:Int, variable:Dynamic, value:Dynamic) {
 		var shitMyPants:Array<String> = obj.split('.');
-		var realObject:Dynamic = Reflect.getProperty(getInstance(), obj);
+		var realObject:Dynamic = Reflect.getProperty(game, obj);
 		if(shitMyPants.length>1)
 			realObject = getPropertyLoopThingWhatever(shitMyPants, false);
 
@@ -79,7 +78,7 @@ class Util
 		}
 	}
 	public static function removeFromGroup(obj:String, index:Int, dontDestroy:Bool = false) {
-		var instance = getInstance();
+		var instance = game;
 
 		if(Std.isOfType(Reflect.getProperty(instance, obj), FlxTypedGroup)) {
 			var sex = Reflect.getProperty(instance, obj).members[index];
@@ -127,10 +126,10 @@ class Util
 	}
 
 	inline public static function getObjectDirectly(tag:String):Null<Dynamic>
-		return getVarInArray(getInstance(), tag);
+		return getVarInArray(game, tag);
 
 	public static function getObjectSimple(tag:String):Null<Dynamic>
-		return Reflect.getProperty(getInstance(), tag);
+		return Reflect.getProperty(game, tag);
 
 	public static function getObject(tag:String):Null<Dynamic> {
 		var killMe:Array<String> = tag.split('.');
