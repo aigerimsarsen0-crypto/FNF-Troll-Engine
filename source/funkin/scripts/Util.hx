@@ -4,6 +4,7 @@ import flixel.tweens.FlxTween;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.util.FlxColor;
 import funkin.scripts.Globals.*;
+import funkin.states.PlayState;
 import funkin.states.PlayState.instance as game;
 import Type.ValueType;
 
@@ -78,18 +79,16 @@ class Util
 		}
 	}
 	public static function removeFromGroup(obj:String, index:Int, dontDestroy:Bool = false) {
-		var instance = game;
-
-		if(Std.isOfType(Reflect.getProperty(instance, obj), FlxTypedGroup)) {
-			var sex = Reflect.getProperty(instance, obj).members[index];
+		if(Std.isOfType(Reflect.getProperty(game, obj), FlxTypedGroup)) {
+			var sex = Reflect.getProperty(game, obj).members[index];
 			if(!dontDestroy)
 				sex.kill();
-			Reflect.getProperty(instance, obj).remove(sex, true);
+			Reflect.getProperty(game, obj).remove(sex, true);
 			if(!dontDestroy)
 				sex.destroy();
 			return;
 		}
-		Reflect.getProperty(instance, obj).remove(Reflect.getProperty(instance, obj)[index]);
+		Reflect.getProperty(game, obj).remove(Reflect.getProperty(game, obj)[index]);
 	}
 
 	public static function getPropertyFromClass(classVar:String, variable:String) {
@@ -211,20 +210,20 @@ class Util
 	}
 
 	public static function cancelTween(tag:String) {
-		if (PlayState.instance.modchartTweens.exists(tag)) {
-			var twn = PlayState.instance.modchartTweens.get(tag);
+		if (game.modchartTweens.exists(tag)) {
+			var twn = game.modchartTweens.get(tag);
 			twn.cancel();
 			twn.destroy();
-			PlayState.instance.modchartTweens.remove(tag);
+			game.modchartTweens.remove(tag);
 		}
 	}
 
 	public static function cancelTimer(tag:String) {
-		if (PlayState.instance.modchartTimers.exists(tag)) {
-			var tmr = PlayState.instance.modchartTimers.get(tag);
+		if (game.modchartTimers.exists(tag)) {
+			var tmr = game.modchartTimers.get(tag);
 			tmr.cancel();
 			tmr.destroy();
-			PlayState.instance.modchartTimers.remove(tag);
+			game.modchartTimers.remove(tag);
 		}
 	}
 
