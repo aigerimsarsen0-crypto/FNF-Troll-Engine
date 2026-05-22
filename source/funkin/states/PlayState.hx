@@ -408,6 +408,15 @@ class PlayState extends MusicBeatState
 	public var endingSong:Bool = false;
 	var goodTicks:Int = 0;
 
+	/** If any song track deviates from the instrumental by more than this amount, then `resyncTracks` will be called **/
+	static final RESYNC_THRESHOLD:Float = 40;
+
+	/** If the game freezes for more than this time, then the song will rewind back to where it was at the start of the freeze and resume from there. **/
+	static final LAG_SPIKE_ROLLBACK_SECONDS:Float = 0.5;
+
+	/** If the game is taking this long to render frames, then the countdown will not start or progress **/
+	static final GOOD_TICK_THRESHOLD:Float = 0.111;
+
 	public var canReset:Bool = true;
 	public var canPause:Bool = true;
 
@@ -2198,6 +2207,20 @@ class PlayState extends MusicBeatState
 		updateSongDiscordPresence();
 	}
 
+	function tryResync() {
+		if (!Conductor.playing)
+			return;
+
+		var songPos = inst.time;
+		for (track in Conductor.tracks) {
+			if (track.playing && Math.abs(track.time - songPos) > RESYNC_THRESHOLD) {
+				trace('sus track resync');
+				resyncTracks();
+				break;
+			}
+		}
+	}
+
 	private var svIndex:Int =0;
 	private inline function updateVisualPosition() {
 		var event:SpeedEvent = null;
@@ -2217,21 +2240,24 @@ class PlayState extends MusicBeatState
 	}
 
 	override function updateSongPosition(?_:FlxSound) {
+		inline function elapsedUnscaled() @:privateAccess
+			return FlxG.game._elapsedMS / 1000;
+
 		inline function lagSpikesEnded() {
-			return (FlxG.elapsed < 0.3 ? ++goodTicks : goodTicks=0) >= 6;
+			return (elapsedUnscaled() < GOOD_TICK_THRESHOLD ? ++goodTicks : goodTicks=0) >= 6;
 		}
 
 		if (!paused) {
 			if (startedSong) {
-				super.updateSongPosition(inst);
-			}
-			else if (!startedCountdown) {
-				if (!inCutscene) {
-					if (lagSpikesEnded())
-						startCountdown();
+				if (elapsedUnscaled() > LAG_SPIKE_ROLLBACK_SECONDS) {
+					Conductor.startSong(Conductor.songPosition);
+					//updateSteps();
+				}
+				else {
+					super.updateSongPosition();
 				}
 			}
-			else {
+			else if (startedCountdown) {
 				if (lagSpikesEnded()) {
 					Conductor.songPosition += FlxG.elapsed * 1000;
 					Conductor.updateSteps();
@@ -2240,6 +2266,12 @@ class PlayState extends MusicBeatState
 						startSong(PlayState.startOnTime);
 						PlayState.startOnTime = 0;
 					}
+				}
+			}
+			else {
+				if (!inCutscene) {
+					if (lagSpikesEnded())
+						startCountdown();
 				}
 			}
 
@@ -3503,8 +3535,6 @@ class PlayState extends MusicBeatState
 
 	override function stepHit()
 	{
-		super.stepHit();
-
 		hud.stepHit(curStep);
 		setOnScripts('curStep', curStep);
 		callOnScripts('onStepHit');
@@ -3520,7 +3550,7 @@ class PlayState extends MusicBeatState
 
 	override function beatHit()
 	{
-		super.beatHit();
+		tryResync();
 
 		hud.beatHit(curBeat);
 

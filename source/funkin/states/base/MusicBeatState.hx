@@ -161,8 +161,6 @@ class MusicBeatState extends TransitionableState
 
 			if (curSection > prevSection)
 				sectionHit();
-
-			tryResync();
 		}
 	}
 
@@ -207,19 +205,6 @@ class MusicBeatState extends TransitionableState
 
 	function resyncTracks() {
 		Conductor.resyncTracks();
-	}
-
-	function tryResync() {
-		if (!Conductor.playing)
-			return;
-
-		for (track in Conductor.tracks) {
-			if (track.playing && Math.abs(track.time - Conductor.getAccPosition()) > 30) {
-				trace('sus track resync');
-				resyncTracks();
-				break;
-			}
-		}
 	}
 
 	inline function getStepsOnSection():Int

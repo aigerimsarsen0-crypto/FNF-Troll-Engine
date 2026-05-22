@@ -2507,8 +2507,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					rollbackSection();
 			}
 			*/
-
-			tryResync();
 		}
 	}
 

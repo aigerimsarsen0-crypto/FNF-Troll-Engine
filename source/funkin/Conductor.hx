@@ -53,10 +53,11 @@ class Conductor
 
 	public static function resyncTracks() {
 		Conductor.songPosition = getAccPosition();
+
 		for (snd in tracks) {
-			snd.stop();
+			snd.pause();
 			snd.pitch = pitch;
-			snd.play(true, getAccPosition());
+			snd.play(true, Conductor.songPosition);
 		}
 
 		Conductor.lastMixPos = Conductor.songPosition;
