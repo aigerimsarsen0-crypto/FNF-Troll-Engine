@@ -178,6 +178,8 @@ class CoolUtil {
 	}
 
 	@:noCompletion static var _point:FlxPoint = new FlxPoint();
+
+	/** @returns Whether if the mouse is hovering over an object, respecting the camera view bounds **/
 	public static function overlapsMouse(object:FlxObject, ?camera:FlxCamera):Bool
 	{
 		camera ??= FlxG.camera;
@@ -189,6 +191,12 @@ class CoolUtil {
 		}
 
 		return false;
+	}
+
+	/** @returns Whether the mouse is hovering over a camera's view bounds **/
+	public static function mouseOverlapsCamera(camera:FlxCamera):Bool {
+		FlxG.mouse.getPositionInCameraView(camera, _point);
+		return camera.containsPoint(_point);
 	}
 
 	public static function centerOnObject(obj1:FlxObject, obj2:FlxObject) {
