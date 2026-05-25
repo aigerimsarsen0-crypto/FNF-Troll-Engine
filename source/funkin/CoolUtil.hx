@@ -248,14 +248,14 @@ class CoolUtil {
 	}
 
 	////
-	public static function colorFromString(color:String):FlxColor
+	public static function colorFromString(str:String):FlxColor
 	{
-		return FlxColor.fromRGB(
-			Std.parseInt("0x"+color.substr(-6, 2)),
-			Std.parseInt("0x"+color.substr(-4, 2)),
-			Std.parseInt("0x"+color.substr(-2, 2)),
-			Std.parseInt("0x"+color.substr(-8, 2))
-		);
+		var r = Std.parseInt("0x"+str.substr(-6, 2));
+		var g = Std.parseInt("0x"+str.substr(-4, 2));
+		var b = Std.parseInt("0x"+str.substr(-2, 2));
+		var a = (str.length < 6) ? 255 : Std.parseInt("0x"+str.substr(-8, 2));
+
+		return FlxColor.fromRGB(r, g, b, a);
 	}
 
 	// could probably use a macro
