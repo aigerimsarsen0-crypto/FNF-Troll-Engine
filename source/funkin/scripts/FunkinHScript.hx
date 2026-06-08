@@ -265,6 +265,7 @@ class FunkinHScript extends FunkinScript
 		#if USING_FLXANIMATE
 		set("FlxAnimate", animate.FlxAnimate);
 		set("FlxAnimateFrames", animate.FlxAnimateFrames);
+		set("FlxSpriteElement", animate.internal.elements.FlxSpriteElement);
 		#end
 		#if VIDEOS_ALLOWED
 		set("FlxVideo", hxvlc.flixel.FlxVideo);
