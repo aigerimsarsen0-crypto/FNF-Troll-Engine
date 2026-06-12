@@ -19,15 +19,15 @@
 		},
 		{
 			"name": "flixel-ui",
-			"type": "haxelib",
-			"version": "2.6.1"
+			"type": "git",
+			"dir": null,
+			"ref": null,
+			"url": "https://github.com/troll-slaiyers/flixel-ui"
 		},
 		{
 			"name": "flixel-addons",
-			"type": "git",
-			"dir": null,
-			"ref": "main",
-			"url": "https://github.com/troll-slaiyers/flixel-addons"
+			"type": "haxelib",
+			"version": "3.2.3"
 		},
 		{
 		  "name": "hxcpp",
