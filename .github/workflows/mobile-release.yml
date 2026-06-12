@@ -1,7 +1,7 @@
 name: Mobile + Release
 on: workflow_dispatch
 
-permissions: write-all   # ✅ caller must allow write perms too
+permissions: write-all
 
 env:
   PROJECT_NAME: FNF-Troll-Engine
