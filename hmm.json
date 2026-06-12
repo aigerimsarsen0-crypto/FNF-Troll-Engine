@@ -19,10 +19,8 @@
 		},
 		{
 			"name": "flixel-ui",
-			"type": "git",
-			"dir": null,
-			"ref": null,
-			"url": "https://github.com/troll-slaiyers/flixel-ui"
+			"type": "haxelib",
+			"version": "2.6.1"
 		},
 		{
 			"name": "flixel-addons",
