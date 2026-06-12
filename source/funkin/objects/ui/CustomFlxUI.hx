@@ -1,7 +1,9 @@
 package funkin.objects.ui;
 
 import openfl.events.KeyboardEvent;
+#if desktop
 import flixel.addons.ui.FlxUISlider;
+#end
 import flixel.addons.ui.FlxUITabMenu;
 import flixel.addons.ui.FlxUINumericStepper;
 import flixel.addons.ui.FlxUITypedButton;
@@ -9,6 +11,8 @@ import flixel.addons.ui.FlxUIInputText;
 import flixel.addons.ui.FlxInputText;
 import flixel.text.FlxText;
 import flixel.ui.FlxButton;
+import flixel.FlxSprite;
+import flixel.FlxG;
 
 /** dont sort my shit **/
 class CustomFlxUITabMenu extends FlxUITabMenu {
@@ -29,10 +33,6 @@ class CustomFlxInputText extends FlxInputText {
 		super.onKeyDown(e);
 		if (hasFocus) e.stopImmediatePropagation();
 	}
-
-	override function destroy() {
-		super.destroy();
-	}
 }
 
 class CustomFlxUIInputText extends FlxUIInputText {
@@ -48,19 +48,10 @@ class CustomFlxUIInputText extends FlxUIInputText {
 		super.onKeyDown(e);
 		if (hasFocus) e.stopImmediatePropagation();
 	}
-
-	override function destroy() {
-		super.destroy();
-	}
 }
 
-/**
-	Allow mouse wheel to change its value.  
-	Prevent value from updating until you press Enter or click out of it.
-**/
 class CustomFlxUINumericStepper extends FlxUINumericStepper {
 	public var hoveringText:Bool = false;
-
 	public var callback:(value:Float, action:String) -> Void;
 
 	public function new(X:Float = 0, Y:Float = 0, StepSize:Float = 1, DefaultValue:Float = 0, Min:Float = -999, Max:Float = 999, Decimals:Int = 0,
@@ -105,9 +96,6 @@ class CustomFlxUINumericStepper extends FlxUINumericStepper {
 	}
 }
 
-/**
-	Allow quick mouse wheel option scrolling without having to open the dropdown
-**/
 class CustomFlxUIDropDownMenu extends flixel.addons.ui.FlxUIDropDownMenu.FlxUIDropDownMenu {
 	override function checkClickOff() {
 		if (!dropPanel.visible && header.button.status == FlxButton.HIGHLIGHT)
@@ -127,8 +115,8 @@ class CustomFlxUIDropDownMenu extends flixel.addons.ui.FlxUIDropDownMenu.FlxUIDr
 	}
 }
 
-/** 
-	Allow mouse wheel to slide the handle
+#if desktop
+/** Allow mouse wheel to slide the handle
 **/
 class CustomFlxUISlider extends FlxUISlider {
 	public var scrollStep:Float = 0.1;
@@ -158,3 +146,4 @@ class CustomFlxUISlider extends FlxUISlider {
 		super.update(elapsed);
 	}
 }
+#end
