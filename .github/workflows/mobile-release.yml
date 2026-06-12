@@ -29,12 +29,14 @@ jobs:
         run: |
           commit_hash=${GITHUB_SHA::7}
           echo "Latest commit hash is $commit_hash"
-          echo "::set-output name=COMMIT_HASH::$commit_hash"
+          # Исправлено устаревшее предупреждение set-output:
+          echo "COMMIT_HASH=$commit_hash" >> "$GITHUB_OUTPUT"
 
   build:
     name: ${{ matrix.name }}
     needs: get-commit-hash
     strategy:
+      fail-fast: false # <-- Добавлено: предотвращает отмену iOS при падении Android
       matrix:
         include:
           - name: Android
@@ -61,7 +63,7 @@ jobs:
     permissions: write-all
     steps:
       - name: Download Android Build
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v4 # Рекомендуется использовать v4 для устранения предупреждений Node.js 20
         with:
            name: androidBuild
            path: /home/runner
@@ -70,7 +72,7 @@ jobs:
         run: mv /home/runner/${{ env.PROJECT_NAME }}-release.apk /home/runner/${{ env.PROJECT_NAME }}-Android.apk
 
       - name: Download iOS Build
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v4 # Рекомендуется использовать v4
         with:
            name: iOSBuild
            path: ${{ github.workspace }}
@@ -81,7 +83,8 @@ jobs:
       - name: Publish The Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "HOTIFX 0.71 (V${{ needs.get-gitversion-hash }})"
+          # Исправлена ошибка: несуществующий needs.get-gitversion-hash заменен на get-commit-hash
+          name: "HOTFIX 0.71 (V${{ needs.get-commit-hash.outputs.commit_hash }})"
           tag_name: "release-${{ needs.get-commit-hash.outputs.commit_hash }}"
           make_latest: true
           files: |
