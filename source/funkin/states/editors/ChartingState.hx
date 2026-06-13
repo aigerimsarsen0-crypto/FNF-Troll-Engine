@@ -1,25 +1,6 @@
 package funkin.states.editors;
 
 #if !desktop
-class FlxUISlider extends flixel.FlxSprite {
-    public function new(?a:Dynamic, ?b:Dynamic, ?c:Dynamic, ?d:Dynamic, ?e:Dynamic, ?f:Dynamic, ?g:Dynamic, ?h:Dynamic, ?i:Dynamic, ?j:Dynamic, ?k:Dynamic) { super(); }
-    public var value:Float = 0;
-    public var minValue:Float = 0;
-    public var maxValue:Float = 0;
-    public var decimals:Int = 0;
-    public var nameLabel:Dynamic;
-    public var valueLabel:Dynamic;
-}
-class CustomFlxUISlider extends flixel.FlxSprite {
-    public function new(?a:Dynamic, ?b:Dynamic, ?c:Dynamic, ?d:Dynamic, ?e:Dynamic, ?f:Dynamic, ?g:Dynamic, ?h:Dynamic, ?i:Dynamic, ?j:Dynamic, ?k:Dynamic) { super(); }
-    public var value:Float = 0;
-    public var minValue:Float = 0;
-    public var maxValue:Float = 0;
-    public var decimals:Int = 0;
-    public var nameLabel:Dynamic;
-    public var valueLabel:Dynamic;
-}
-#end
 
 import funkin.objects.ui.ColorPicker;
 import flixel.util.FlxStringUtil;
@@ -5095,3 +5076,10 @@ private abstract class ChartingAction
 	inline function getSection(idx:Int):SwagSection
 		return _song.notes[idx];
 }
+		#else
+class ChartingState extends flixel.FlxState {
+    public function new(?a:Dynamic, ?b:Dynamic, ?c:Dynamic, ?d:Dynamic) {
+        super();
+    }
+}
+#end
