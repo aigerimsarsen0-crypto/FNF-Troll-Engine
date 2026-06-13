@@ -1,6 +1,6 @@
 package funkin.states.editors;
 
-#if !desktop
+#if desktop
 
 import funkin.objects.ui.ColorPicker;
 import flixel.util.FlxStringUtil;
