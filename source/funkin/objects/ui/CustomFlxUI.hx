@@ -146,4 +146,24 @@ class CustomFlxUISlider extends FlxUISlider {
 		super.update(elapsed);
 	}
 }
+#else
+/** ФАЛЬШИВЫЙ СЛАЙДЕР ДЛЯ МОБИЛОК (Чтобы компилятор не падал на ChartingState)
+**/
+class CustomFlxUISlider extends flixel.FlxSprite {
+    public var scrollStep:Float = 0.1;
+    public var value:Float = 0;
+    public var minValue:Float = 0;
+    public var maxValue:Float = 0;
+    public var decimals:Int = 0;
+    public var nameLabel:flixel.text.FlxText;
+    public var valueLabel:flixel.text.FlxText;
+    public var callback:Dynamic = null;
+    
+    // Принимаем любые аргументы, чтобы симулировать настоящий слайдер
+    public function new(?a:Dynamic, ?b:Dynamic, ?c:Dynamic, ?d:Dynamic, ?e:Dynamic, ?f:Dynamic, ?g:Dynamic, ?h:Dynamic, ?i:Dynamic, ?j:Dynamic, ?k:Dynamic) {
+        super();
+        nameLabel = new flixel.text.FlxText();
+        valueLabel = new flixel.text.FlxText();
+    }
+}
 #end
